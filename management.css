@@ -1,0 +1,141 @@
+/* Shared arena theme, applied to every screen after kickoff. */
+.management-mode{--surface:#121b2df5;--surface-raised:#172237;--text-faint:#aab7ce;--gold:#ffc76f}
+.management-mode .top{min-height:68px;justify-content:space-between;border-bottom:1px solid var(--line)}
+.management-mode #team-badge{max-width:72%;gap:9px}
+.management-mode #team-badge .nba-logo{width:44px;height:44px}
+.management-mode #team-badge>span:last-child{min-width:0}
+.management-mode #team-badge b,.management-mode #team-badge small{display:block}
+.management-mode #team-badge b{font-size:16px}
+.management-mode #team-badge small{font-size:10px;color:var(--text-faint)}
+.management-label{color:#e9bd78;font-size:12px;font-weight:750;letter-spacing:.04em;white-space:nowrap}
+
+.management-heading{margin:23px 0 16px}
+.management-heading h1{font-size:clamp(33px,6vw,55px);color:var(--ink)}
+.management-heading p{margin-top:7px;color:var(--text-faint)}
+.management-mode .intro h1{color:var(--ink)}
+.management-mode .intro p,.management-mode .panel p,.management-mode .report p{color:var(--text-faint)}
+.management-mode .eyebrow,.management-mode .panel-head h2{color:var(--gold)}
+.management-mode .panel,.management-mode .report,.management-mode .scoreboard{
+ background:linear-gradient(145deg,var(--surface-raised),var(--surface) 75%);
+ border-color:var(--line);box-shadow:0 8px 30px #0204083c;
+}
+.management-mode .panel>h2{font-size:19px}
+.management-mode .panel>h3{color:#f4f7ff}
+.management-mode .btn{
+ background:#1b2840;color:#ecf0fa;border:1px solid #6172919c;box-shadow:none;
+}
+.management-mode .btn.primary{
+ color:#211603;background:linear-gradient(135deg,#ffd68b,#f2ad55);
+ border-color:#ffc76f;box-shadow:0 4px 16px #df8f2d2e;
+}
+.management-mode .btn:hover:not(:disabled){filter:brightness(1.15)}
+.management-mode .btn:disabled{opacity:.5}
+.management-mode .subtabs .btn[aria-pressed=true]{background:#ffc76f;border-color:#ffc76f;color:#231602}
+.management-mode .subtabs{margin-bottom:12px}
+.management-mode .row{border-color:var(--line)}
+
+.management-mode .office-status{
+ margin:0 0 13px;grid-template-columns:minmax(0,1.27fr) repeat(4,minmax(0,1fr));
+ background:#5e6e8a55;border-color:#7d90ae68;
+}
+.management-mode .office-status div{background:#111b2d;padding:10px 7px}
+.management-mode .office-status small{color:#bdc9dc}
+.management-mode .office-status strong{color:#ffd18b;font-size:clamp(11px,2.7vw,18px)}
+.management-mode .office-status div:first-child strong{font-size:clamp(10px,2.55vw,16px)}
+.office-grid{grid-template-columns:1fr 1fr}
+.office-next{display:grid;gap:3px;margin-top:13px;padding:10px;border-radius:8px;border:1px solid #8799b53d;background:#0b1322}
+.office-next small{font-size:11px;color:var(--text-faint)}
+.office-next strong{color:#ffd18b;font-size:15px}
+.management-mode .office-lineup span{border-color:#a7b7d031}
+.management-mode .office-lineup strong{color:var(--gold)}
+
+.management-mode .roster-card{border-color:#7c8faa69;background:#111a2d;box-shadow:0 5px 18px #02050948}
+.management-mode .roster-cover{background:linear-gradient(145deg,#253651,#121b2e);color:#f5f8ff}
+.management-mode .roster-cover:hover{background:#2a3b56}
+.management-mode .roster-cover:before{background:repeating-linear-gradient(118deg,transparent 0 18px,#a5b9dc1f 19px 20px)}
+.management-mode .roster-cover:after{background:linear-gradient(0deg,#111a2d 12%,#111a2dbd 45%,transparent)}
+.management-mode .card-ovr{color:#ffcf86;border-color:#a17a48;background:#151c2b}
+.management-mode .card-role{color:#ffd18b}
+.management-mode .card-portrait .initial{color:#bac6dd64}
+.management-mode .card .photo,.management-mode .mini-photo{background:#29364d;color:#dbe6f9}
+.management-mode .market-item{border-color:var(--line);background:#121c30ed}
+.management-mode .market-item h3{color:#f0f4ff}
+.management-mode .coach-icon{color:#ffc76f;background:#25324a}
+.management-mode .record-row{border-color:#95a7c238}
+.management-mode .team-record{background:#101a2dee;color:#ecf0fa}
+.management-mode .team-record:hover{background:#25334a}
+.management-mode .team-record.own-record{background:#3c3024;border-color:#c194517a}
+.management-mode .team-record.own-record:hover{background:#493729}
+.management-mode .record-head{color:#b7c5da}
+.management-mode .logo-choice{background:#151f32;border-color:var(--line);color:var(--ink)}
+.management-mode .logo-choice[aria-pressed=true]{border-color:#ffca76;box-shadow:inset 0 0 0 1px #ffca76;background:#26283a}
+.management-mode dialog{background:#141e31;color:#f2f5fd;border-color:#7e8fa8;box-shadow:0 20px 55px #000a}
+.management-mode dialog::backdrop{background:#050815b8}
+.management-mode .detail-data div{background:#202e45}
+.management-mode .detail-roster div{border-color:var(--line)}
+
+.management-mode .step{border-color:#69799293}
+.management-mode .step.current{border-color:#ffc76f;color:#ffc76f}
+.management-mode .step.done{border-color:#a48d6d}
+.management-mode .hero{
+ background:linear-gradient(120deg,#202b41,#141c30);
+ border-color:#667895; color:#f7f8fd;
+}
+.management-mode .hero:before{background:repeating-linear-gradient(132deg,transparent 0 29px,#d3b17d18 30px 31px)}
+.management-mode .hero-photo{background:#31415c}
+.management-mode .hero-photo:after{background:linear-gradient(90deg,#202b41 0%,transparent 63%),linear-gradient(0deg,#121928aa,transparent 58%)}
+.management-mode .hero p{color:#c8d3e8}
+.management-mode .hero .pick{background:#181e2c;border-color:#ad8957;color:#ffd18b}
+.management-mode .card,.management-mode .tactic{background:#142034;color:var(--ink);border-color:#63789488}
+.management-mode .card:hover,.management-mode .tactic:hover{border-color:#d6aa6d}
+.management-mode .card[aria-pressed=true],.management-mode .tactic[aria-pressed=true]{background:#2a2d38;border-color:#ffc76f;box-shadow:inset 0 0 0 1px #ffc76f}
+.management-mode .ledger div{background:#0c1526}
+.management-mode .ledger .over{color:#ff9e91}
+.management-mode select{background:#101b2e;border-color:#8495b3;color:#f3f6fd}
+.management-mode .boxscore{color:#ffd18b}
+.management-mode .court{border-color:#718aab;background:repeating-linear-gradient(0deg,#233550 0 13px,#243952 13px 14px)}
+.management-mode .court:before,.management-mode .court:after{border-color:#93a9c3}
+.management-mode .dot{background:#ffc76f;color:#211b13}
+.management-mode .dot.def{background:#879fbf;color:#122138}
+.management-mode #franchise-nav{
+ border-color:#7387aa78;background:#111b2df7;box-shadow:0 -9px 36px #05070f84;width:min(100%,912px)
+}
+.management-mode #franchise-nav button{color:#becae0}
+.management-mode #franchise-nav button[aria-current=page]{color:#ffcf86;background:#3b3029}
+@media(max-width:540px){
+ .management-mode .top{min-height:60px}
+ .management-heading{margin-top:18px}
+ .management-mode .office-status div{padding:8px 4px}
+ .office-grid{grid-template-columns:1fr}
+}
+
+.management-mode #franchise-nav{grid-template-columns:repeat(7,minmax(0,1fr))}
+.management-mode #franchise-nav button{font-size:clamp(10px,2.9vw,12px)}
+.office-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.office-heading span{color:#ffc76f;font-weight:750;white-space:nowrap;font-size:14px}
+.office-grid>.panel{margin-top:0}
+.office-grid .office-fixture .fixture-line{padding-inline:0}
+.season-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 15px}
+.season-summary div{min-width:0;padding:12px;border-radius:10px;border:1px solid var(--line);background:#172237}
+.season-summary small,.season-summary b{display:block}
+.season-summary small{color:var(--text-faint);font-size:12px}
+.season-summary b{font:800 clamp(21px,5vw,32px)/1.2 system-ui;color:#ffc76f}
+.season-calendar .panel-head,.training-grid .panel-head{margin-top:0}
+.fixture-line{display:grid;grid-template-columns:minmax(57px,auto) 30px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:57px;padding:6px 0;border-bottom:1px solid var(--line)}
+.fixture-line .nba-logo{width:30px;height:30px}
+.fixture-line b,.fixture-line small{display:block}
+.fixture-line b{font-size:13px;overflow-wrap:anywhere}
+.fixture-line small,.fixture-date{color:var(--text-faint);font-size:11px}
+.fixture-date{max-width:74px}
+.fixture-result{display:grid;justify-items:end;gap:4px;font-size:12px;white-space:nowrap}
+.fixture-result .btn{padding:2px 7px;min-height:28px;font-size:11px}
+.win-result{color:#ffc76f}
+.training-grid .panel{margin-top:0}
+.training-player{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:10px 0}
+.training-player .mini-photo{width:42px}
+.training-player small{display:block;color:var(--text-faint)}
+.training-player>span:last-child{font-weight:750;color:#ffc76f}
+.training-choice{min-height:57px}
+.training-choice b{display:block}
+.tactic-plan{display:grid;gap:7px}
+@media(max-width:360px){.management-mode #franchise-nav{gap:1px;padding-inline:4px}.fixture-line{gap:5px}}
