@@ -9,7 +9,8 @@ const stars={
 };
 const ops=window.TeamOps;
 const marks=ops.byTeam;
-const tabs={office:["办公室","▤"],season:["赛季","▦"],training:["训练","◇"],players:["球员","♙"],market:["市场","⇄"],league:["联盟","◎"],settings:["设置","⚙"]};
+const tabs={office:["大厅","⌂"],season:["赛季","▦"],players:["阵容","♙"],training:["训练","◇"],market:["市场","⇄"],packs:["开包","▣"],league:["联盟","◎"],settings:["设置","⚙"]};
+const menu=["season","players","training","market","packs","league"];
 const escape=text=>String(text).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
 const mark=(id,extra="")=>`<span class="fr-mark nba-logo ${extra}" aria-hidden="true"><img src="assets/teams/${marks[id]?id:"sa"}.svg" alt=""></span>`;
 const teamIdentities={
@@ -28,19 +29,46 @@ const teamCity=id=>teamIdentities[id]?.[0]||"";
 const teamAccent=id=>teamIdentities[id]?.[1]||"";
 function rarityOf(ovr){
  const rating=Number(ovr);
+ if(rating>=95) return "holo";
  if(rating>=90) return "legend";
  if(rating>=83) return "gold";
  if(rating>=76) return "silver";
  return "bronze";
 }
+function shownName(id,player){
+ return window.PlayerSkins?.[id]?.name||player.name;
+}
+function cardStats(player,ovr){
+ const style=player.style||"";
+ const nudge=(words,amount)=>words.some(word=>style.includes(word))?amount:0;
+ const clamp=value=>Math.max(45,Math.min(99,Math.round(value)));
+ const base=Number(ovr)||70;
+ const shoot=clamp(base-3+nudge(["投","三分","投射"],6)+nudge(["攻坚"],2));
+ const drive=clamp(base-1+nudge(["突破","冲筐","顺下"],6));
+ const defense=clamp(base-5+nudge(["防","护框","协防"],8));
+ const board=clamp(base-2+nudge(["篮板"],6));
+ const table={
+  PG:[["组织",clamp(base-2+nudge(["组织","传球"],5))],["突破",drive],["防守",defense]],
+  SG:[["投篮",shoot],["突破",drive],["防守",defense]],
+  SF:[["得分",shoot],["突破",drive],["防守",defense]],
+  PF:[["篮板",board],["内线",drive],["防守",defense]],
+  C:[["篮板",board],["护框",clamp(base-3+nudge(["护框"],7))],["防守",defense]]
+ };
+ return table[player.pos]||[["投篮",shoot],["突破",drive],["防守",defense]];
+}
+function cardBack(){
+ return `<span class="card-back" aria-hidden="true"><span class="card-back-ring"></span><span class="card-back-gem"></span></span>`;
+}
 function collectibleCard({id,player,ovr,logo,photo,action,pressed=null,asStar=false,deal=0}){
  const tier=rarityOf(ovr);
- const shine=tier==="legend"?'<span class="card-shine" aria-hidden="true"></span>':"";
+ const name=shownName(id,player);
  const number=player.num==null?"":`<span class="card-num">#${player.num}</span> `;
+ const stats=cardStats(player,ovr).map(([label,value])=>`<span><small>${label}</small><b>${value}</b></span>`).join("");
+ const holo=tier==="holo"?'<span class="card-holo" aria-hidden="true"></span>':"";
  const attrs=[`data-action="${action}"`,`data-value="${id}"`,`data-rarity="${tier}"`];
  if(pressed!==null) attrs.push(`aria-pressed="${pressed}"`);
  if(asStar) attrs.push(`style="--deal:${deal}"`);
- return `<button type="button" class="roster-cover rarity-${tier}${asStar?" star-card":""}" ${attrs.join(" ")}>${photo(id,"card-portrait")}${mark(logo,"card-team-logo")}<span class="card-ovr">${ovr}<small>${escape(player.pos)}</small></span>${shine}<span class="card-namebar"><b title="${escape(player.name)}">${escape(player.name)}</b><small>${number}${escape(player.style)}</small></span></button>`;
+ return `<button type="button" class="roster-cover rarity-${tier}${asStar?" star-card":""}" ${attrs.join(" ")}><span class="card-ornament" aria-hidden="true"></span>${holo}${photo(id,"card-portrait")}${mark(logo,"card-team-logo")}<span class="card-ovr">${ovr}<small>${escape(player.pos)}</small></span><span class="card-namebar"><b title="${escape(name)}">${number}${escape(name)}</b><span class="card-stats">${stats}</span></span></button>`;
 }
 function openingLogoPicker({logo,region="all",query=""},button){
  const selected=teamCity(logo);
@@ -86,7 +114,66 @@ function wizard(state,button,photo){
  return `<section class="setup-page opening-page"><header class="opening-hero"><div class="opening-brand">篮球总经理</div><p>从建队开始，执掌你的球队。</p></header><div class="setup-steps">${labels.map((label,index)=>`<span ${step===index+1?'aria-current="step"':""} class="${step===index+1?"current":""}">${index+1} ${label}</span>`).join("")}</div><section class="create-panel ${pickingLogo?"opening-picker":""}"><h1>${pickingLogo?"选择球队队标":"选择当家球星"}</h1><p class="muted">${pickingLogo?"30 支球队队标":teamCity(logo)+" · 选择一名球星加入首发"}</p>${content}</section></section>`;
 }
 function navigation(active,flow){
- return Object.entries(tabs).map(([id,[label,glyph]])=>`<button type="button" data-action="tab" data-value="${id}" ${id===active&&!flow?'aria-current="page"':""}><span aria-hidden="true">${glyph}</span>${label}</button>`).join("");
+ return menu.map(id=>{
+  const [label,glyph]=tabs[id];
+  return `<button type="button" data-action="tab" data-value="${id}" ${id===active&&!flow?'aria-current="page"':""}><span aria-hidden="true">${glyph}</span>${label}</button>`;
+ }).join("");
+}
+function newsLine(state,players){
+ const name=state.team?.name||"球队";
+ const bits=[`${name} 执教进行中`];
+ const [wins,losses]=ops.ownRecord(state);
+ if(wins||losses) bits.push(`本季 ${wins} 胜 ${losses} 负`);
+ for(const game of ops.schedule(state)){
+  if(!game.result) continue;
+  const outcome=game.result.home>game.result.away?"胜":"负";
+  bits.push(`对阵${teamCity(game.team.id)}${game.team.name} ${outcome} ${game.result.home}:${game.result.away}`);
+ }
+ for(const id of state.meta.signed){
+  const player=players[id];
+  if(player) bits.push(`签下 ${player.name}`);
+ }
+ if(state.meta.coach&&ops.coaches[state.meta.coach]) bits.push(`主教练 ${ops.coaches[state.meta.coach].name} 到任`);
+ if(bits.length===1) bits.push("休赛期进行中，完成选秀和合同后开启揭幕战");
+ return bits.join("    ·    ");
+}
+function lobbyPage(state,{button,photo,players,money,rating,progress}){
+ const order=["PG","SG","SF","PF","C"];
+ const logo=state.team.logo;
+ const cards=order.map((pos,index)=>{
+  const id=state.starters[pos];
+  if(!id||!players[id]) return "";
+  const player=players[id];
+  return `<div class="lobby-slot" style="--slot:${index}">${collectibleCard({id,player,ovr:rating(id),logo,photo,action:"player-detail"})}</div>`;
+ }).join("");
+ const [wins,losses]=ops.ownRecord(state);
+ const next=ops.schedule(state).find(game=>!game.result);
+ const conf=marks[logo]?.conference==="W"?"西部":"东部";
+ const standing=wins||losses?`${conf} · ${wins} 胜 ${losses} 负`:`${conf} · 赛季未开始`;
+ const current=progress();
+ const ready=state.rookieSigned&&Boolean(state.veteran);
+ const start=state.result
+  ? button("查看赛季","tab",{value:"season",primary:true})
+  : button("开始比赛","open-flow",{value:String(current),primary:true,disabled:current>=2&&!ready});
+ const fixture=next?`<div class="lobby-next">${mark(next.team.id)}<div><small>下一场</small><b>${teamCity(next.team.id)}${next.team.name}</b><small>${next.index===0?"揭幕战":"常规赛 · 主场"}</small></div></div>`:`<p>本赛季赛程已全部结束。</p>`;
+ const ticker=newsLine(state,players);
+ return `<div class="lobby"><div class="lobby-stage"><div class="lobby-arc">${cards}</div><div class="lobby-platform" aria-hidden="true"></div></div><aside class="lobby-side"><h2>下一场比赛</h2>${fixture}<div class="lobby-start">${start}</div><div class="lobby-record"><small>本赛季战绩</small><b>${wins} 胜 ${losses} 负</b><small>${standing}</small></div></aside><div class="lobby-news"><div class="lobby-news-track"><span>${escape(ticker)}</span></div></div></div>`;
+}
+function packPage(button){
+ return `<section class="panel pack-placeholder"><h2>开包</h2><p>球星包还在准备卡池。下面可以预览开包动画：卡背晃动、按最高稀有度打出光柱、扇开、翻面，全息或传奇会再放大一次。</p><div class="actions">${button("开启演示包","pack-demo",{primary:true})}</div></section>`;
+}
+function packMarkup(pack,{photo,button}){
+ const best=pack.entries.reduce((top,entry)=>entry.ovr>=top.ovr?entry:top,pack.entries[0]);
+ const tier=rarityOf(best.ovr);
+ const flipped=pack.phase==="flip"||pack.phase==="hero"||pack.phase==="done";
+ const showStack=pack.phase==="shake"||pack.phase==="beam";
+ const cards=pack.entries.map((entry,index)=>{
+  const hero=pack.phase==="hero"&&entry.id===pack.focus?" is-hero":"";
+  const front=collectibleCard({id:entry.id,player:entry.player,ovr:entry.ovr,logo:pack.logo,photo,action:"pack-hold"});
+  return `<div class="flip-card${flipped?" is-flipped":""}${hero}" style="--fan:${(index-(pack.entries.length-1)/2)*14}deg;--i:${index}"><div class="flip-inner"><div class="flip-face front">${front}</div><div class="flip-face back">${cardBack()}</div></div></div>`;
+ }).join("");
+ const closeLabel=pack.kind==="create"?"进入球队":"关闭";
+ return `<div class="pack-stage" data-phase="${pack.phase}" data-beam="${tier}"><div class="pack-beam" aria-hidden="true"></div>${showStack?`<div class="pack-stack">${cardBack()}${cardBack()}${cardBack()}</div>`:""}<div class="pack-fan">${cards}</div><div class="pack-actions">${pack.phase==="done"?button(closeLabel,"pack-close",{primary:true}):button("跳过","pack-skip")}</div></div>`;
 }
 function marketItems(prospects){
  const source={...ops.free,...ops.coaches,...prospects};
@@ -166,9 +253,7 @@ function dashboard(state,{button,photo,roster,players,money,progress,prospects,r
  const open=(label,phase,opts={})=>button(label,"open-flow",{value:String(phase),...opts});
  let content;
  if(view==="office"){
-  const [wins,losses]=ops.ownRecord(state);
-  const next=ops.schedule(state).find(game=>!game.result);
-  return `<div class="management-heading office-heading"><h1>办公室</h1><span>${wins} 胜 · ${losses} 负</span></div>${ops.status(state.meta,money)}<div class="dashboard-grid office-grid"><section class="panel"><h2>球队经营</h2><p>主教练 · ${ops.coaches[state.meta.coach]?.name||"待聘任"} · 阵容 ${roster().length} 人</p><div class="office-next"><small>当前进度</small><strong>${state.result?next?"赛季进行中":"赛季已结束":["选秀夜","合同中心","首发安排","揭幕战"][current]}</strong></div><div class="actions">${state.result?button("查看赛季","tab",{value:"season",primary:true}):open("继续经营",current,{primary:true})}${button("推进一天","advance-day")}</div></section><section class="panel office-fixture"><h2>赛程与战绩</h2>${next?fixtureLine(next,button):"<p>本赛季赛程已全部结束。</p>"}<div class="actions">${button("进入赛季","tab",{value:"season"})}</div></section><section class="panel"><h2>球队首发</h2><div class="office-lineup">${Object.values(state.starters).map(id=>`<span><small>${players[id].pos}</small><b>${players[id].name}</b><strong>${rating(id)}</strong></span>`).join("")}</div><div class="actions">${button("查看球员","tab",{value:"players"})}</div></section><section class="panel"><h2>训练与战术</h2><p>当前战术 · ${tactics[state.tactic].name}</p><p>剩余行动力 · ${state.meta.energy} / 6</p><div class="actions">${button("安排训练","tab",{value:"training"})}</div></section></div>`;
+  return lobbyPage(state,{button,photo,players,money,rating,progress});
  }
  if(view==="season"){
   content=seasonPage(state,{button,progress});
@@ -182,6 +267,8 @@ function dashboard(state,{button,photo,roster,players,money,progress,prospects,r
    const role=id===team.star?"当家球星":starters.includes(id)?"首发":"";
    return `<article class="roster-card">${collectibleCard({id,player:p,ovr,logo:team.logo,photo,action:"player-detail"})}<div class="roster-actions"><small>${money(salary)} / 年</small>${role?`<span class="roster-role">${role}</span>`:button("设为首发","dashboard-start",{value:id})}</div></article>`;
   }).join("")}</div></section>`;
+ }else if(view==="packs"){
+  content=packPage(button);
  }else if(view==="market"){
   content=marketPage(state,{button,photo,prospects});
  }else if(view==="league"){
@@ -193,5 +280,5 @@ function dashboard(state,{button,photo,roster,players,money,progress,prospects,r
  }
  return `<div class="management-heading"><h1>${tabs[view][0]}</h1></div>${content}`;
 }
-window.FranchiseUI={stars,marks,tabs,escape,mark,wizard,navigation,dashboard,marketDetail,playerDetail,filterOpeningLogos,teamCity,teamAccent};
+window.FranchiseUI={stars,marks,tabs,escape,mark,wizard,navigation,dashboard,marketDetail,playerDetail,filterOpeningLogos,teamCity,teamAccent,rarityOf,packMarkup,cardBack};
 })();

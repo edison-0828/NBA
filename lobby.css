@@ -1,0 +1,143 @@
+/* Lobby, ornate cards, holographic foil, and pack reveal. */
+.card-portrait{inset:8px 0 32% 0}
+.card-ornament{
+ position:absolute;inset:4px;z-index:4;pointer-events:none;border-radius:11px;
+ border:1px solid color-mix(in srgb,var(--frame) 80%,#fff);
+ background:
+  linear-gradient(var(--frame),var(--frame)) 0 0 / 18px 2px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 0 0 / 2px 18px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 100% 0 / 18px 2px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 100% 0 / 2px 18px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 0 100% / 18px 2px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 0 100% / 2px 18px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 100% 100% / 18px 2px no-repeat,
+  linear-gradient(var(--frame),var(--frame)) 100% 100% / 2px 18px no-repeat;
+}
+.roster-cover.rarity-legend,.roster-cover.rarity-holo{--frame:#f0d48a;border-color:#f0d48a}
+.roster-cover.rarity-holo{
+ border-color:transparent;
+ background:
+  radial-gradient(90% 46% at 50% 0%,color-mix(in srgb,var(--club-accent) 34%,transparent),transparent 70%) padding-box,
+  linear-gradient(#141028,#10182b) padding-box,
+  conic-gradient(from 120deg,#ff6d9a,#ffe08a,#7dffe1,#7eb6ff,#e39bff,#ff6d9a) border-box;
+ box-shadow:inset 0 0 0 1px #ffe7a8,0 0 16px #9cf6,var(--lift);
+}
+.card-holo{
+ position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;
+ background:
+  radial-gradient(circle at var(--hx,32%) var(--hy,22%),rgba(255,255,255,.72),transparent 24%),
+  linear-gradient(118deg,transparent 28%,rgba(255,110,170,.32) 40%,rgba(255,226,120,.34) 50%,rgba(110,255,210,.32) 60%,rgba(120,170,255,.36) 70%,transparent 82%);
+ mix-blend-mode:screen;opacity:.62;
+}
+.card-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;margin-top:4px;text-align:center}
+.card-stats small{display:block;font-size:9px;line-height:1.2;color:#f6f3eccc}
+.card-stats b{display:block;font-size:13px;line-height:1.1;color:var(--ovr)}
+.card-namebar b .card-num{margin-right:4px}
+
+.card-back{
+ position:relative;display:block;width:100%;height:100%;border-radius:12px;overflow:hidden;
+ background:
+  radial-gradient(circle at 50% 38%,#2a3d68,transparent 58%),
+  linear-gradient(160deg,#1a2744,#0d1424);
+ border:2px solid #e2c56a;box-shadow:inset 0 0 0 5px #10182c,inset 0 0 0 6px #c9a45a;
+}
+.card-back-ring{position:absolute;left:50%;top:42%;width:48%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid #f0d48a;border-radius:50%}
+.card-back-gem{position:absolute;left:50%;top:42%;width:16%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(45deg);background:linear-gradient(135deg,#fff4cc,#d7a441)}
+
+#pack-layer{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:#05070fe8;padding:24px}
+#pack-layer[hidden]{display:none}
+.pack-stage{position:relative;display:grid;justify-items:center;gap:18px;width:min(100%,920px)}
+.pack-beam{position:absolute;top:0;width:34%;height:78%;opacity:0;filter:blur(8px);pointer-events:none;background:linear-gradient(180deg,transparent,var(--beam,#ffc76f),transparent)}
+.pack-stage[data-beam=holo]{--beam:#d7b4ff}
+.pack-stage[data-beam=legend]{--beam:#ffc76f}
+.pack-stage[data-beam=gold]{--beam:#e2b34a}
+.pack-stage[data-beam=silver]{--beam:#d5deea}
+.pack-stage[data-beam=bronze]{--beam:#c48962}
+.pack-stage[data-beam=holo] .pack-beam{background:linear-gradient(180deg,transparent,#ff7aa2 18%,#ffe08a 40%,#7dffe1 62%,#8eb6ff 80%,transparent)}
+.pack-stage[data-phase=beam] .pack-beam,.pack-stage[data-phase=fan] .pack-beam,.pack-stage[data-phase=flip] .pack-beam,.pack-stage[data-phase=hero] .pack-beam{opacity:.9}
+.pack-stack{position:relative;width:min(42vw,150px);aspect-ratio:2/3}
+.pack-stack .card-back{position:absolute;inset:0}
+.pack-stack .card-back:nth-child(1){transform:rotate(-8deg) translate(-8px,6px)}
+.pack-stack .card-back:nth-child(2){transform:rotate(7deg) translate(8px,4px)}
+.pack-stage[data-phase=shake] .pack-stack{animation:pack-shake .7s ease-in-out}
+@keyframes pack-shake{20%{transform:rotate(-7deg) translateY(-6px)}40%{transform:rotate(7deg)}60%{transform:rotate(-4deg) translateY(-2px)}80%{transform:rotate(3deg)}}
+.pack-fan{display:flex;gap:8px;align-items:end;justify-content:center;perspective:1000px;min-height:280px}
+.pack-stage[data-phase=shake] .pack-fan,.pack-stage[data-phase=beam] .pack-fan{visibility:hidden;position:absolute}
+.flip-card{width:min(16vw,138px);aspect-ratio:2/3;position:relative;transform:rotate(var(--fan)) translateY(calc((var(--i) - 2) * -6px));transition:transform .45s ease}
+.flip-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s ease}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden}
+.flip-face.front{transform:rotateY(180deg)}
+.flip-face.front .roster-cover{height:100%;aspect-ratio:auto}
+.flip-card.is-flipped .flip-inner{transform:rotateY(180deg)}
+.pack-stage[data-phase=hero] .flip-card.is-hero{transform:translateY(-28px) scale(1.18);z-index:3}
+.pack-actions{position:relative;z-index:2}
+
+.management-mode .top{display:block;border:0;background:none;min-height:0;padding-top:8px}
+.lobby-bar{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--club-accent) 45%,#31445f);border-radius:14px;background:linear-gradient(90deg,color-mix(in srgb,var(--club-accent) 22%,#10182c),#10182ce6 42%,#10182c)}
+.lobby-club{display:flex;align-items:center;gap:8px;min-width:0}
+.lobby-club .nba-logo{width:42px;height:42px}
+.lobby-club b,.lobby-club small{display:block}
+.lobby-club b{font-size:16px}
+.lobby-club small{color:#c5d0e2;font-size:11px}
+.lobby-meter{display:block;height:4px;margin-top:4px;border-radius:99px;background:#243044;overflow:hidden}
+.lobby-meter span{display:block;height:100%;background:var(--club-accent)}
+.lobby-currencies{display:flex;gap:8px;margin-left:auto}
+.lobby-currencies span{min-width:72px;padding:4px 8px;border-radius:9px;background:#0d1524cc;border:1px solid #31445f}
+.lobby-currencies small,.lobby-currencies b{display:block}
+.lobby-currencies small{color:#9aabc4;font-size:10px}
+.lobby-currencies b{font-size:13px}
+.lobby-settings{min-height:36px;padding:4px 10px}
+.lobby{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px);gap:14px;align-items:start}
+.lobby-stage{position:relative;min-width:0;min-height:460px;padding:12px 4px 28px;overflow:hidden;border-radius:18px;background:radial-gradient(ellipse at 50% 80%,color-mix(in srgb,var(--club-accent) 28%,transparent),transparent 62%),linear-gradient(#121a2c00,#0c1322)}
+.lobby-arc{display:flex;justify-content:center;align-items:end;width:100%;gap:0}
+.lobby-slot{width:18%;flex:0 1 18%;min-width:0;transform-origin:center bottom}
+.lobby-slot:nth-child(1){transform:translateY(22px) rotate(-6deg)}
+.lobby-slot:nth-child(2){transform:translateY(10px) rotate(-3deg)}
+.lobby-slot:nth-child(3){transform:translateY(0)}
+.lobby-slot:nth-child(4){transform:translateY(10px) rotate(3deg)}
+.lobby-slot:nth-child(5){transform:translateY(22px) rotate(6deg)}
+.lobby-platform{height:36px;margin:-6px 8% 0;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--club-accent) 75%,#fff) 0%,color-mix(in srgb,var(--club-accent) 35%,transparent) 46%,transparent 72%);box-shadow:0 0 32px color-mix(in srgb,var(--club-accent) 55%,transparent)}
+.lobby-side{padding:14px;border-radius:16px;border:1px solid #31445f;background:linear-gradient(180deg,#17233a,#10182c)}
+.lobby-side h2{font-size:16px;margin-bottom:8px}
+.lobby-next{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:center}
+.lobby-next .nba-logo{width:42px;height:42px}
+.lobby-next small,.lobby-next b{display:block}
+.lobby-next small{color:#aab7ce;font-size:11px}
+.lobby-start{margin:14px 0}
+.lobby-start .btn{width:100%;min-height:52px;font-size:18px}
+.lobby-record small,.lobby-record b{display:block}
+.lobby-record b{font-size:28px;line-height:1.15;margin:4px 0}
+.lobby-record small{color:#c5d0e2}
+.lobby-news{grid-column:1 / -1;overflow:hidden;border-radius:10px;border:1px solid color-mix(in srgb,var(--club-accent) 40%,#31445f);background:#0d1524}
+.lobby-news-track{display:flex;width:max-content;animation:news-ticker 22s linear infinite}
+.lobby-news-track span{padding:8px 28px;white-space:nowrap;color:#d5deee;font-size:13px}
+@keyframes news-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.pack-placeholder p{margin-top:8px;color:#c5d0e2}
+
+@media (min-width:900px){
+ body.management-mode{padding-bottom:0}
+ .management-mode .shell{display:grid;grid-template-columns:124px minmax(0,1fr);width:min(100%,1240px);align-items:start;column-gap:12px}
+ .management-mode .top,.management-mode #steps,.management-mode main{grid-column:2}
+ .management-mode #franchise-nav{
+  position:sticky;top:12px;left:auto;bottom:auto;transform:none;width:auto;height:auto;
+  grid-column:1;grid-row:1 / span 4;display:flex;flex-direction:column;margin:12px 0 0;
+  border-radius:16px;padding:8px;
+ }
+ .management-mode #franchise-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:58px;font-size:13px;white-space:nowrap}
+}
+@media (max-width:899px){
+ .lobby{grid-template-columns:1fr}
+ .lobby-stage{min-height:0}
+ .lobby-arc{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
+ .lobby-slot{flex:0 0 168px;transform:none}
+ .lobby-currencies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-left:0;width:100%}
+ .lobby-bar{flex-wrap:wrap}
+ .pack-fan{gap:4px}
+ .flip-card{width:18vw}
+ .management-mode #franchise-nav{grid-template-columns:repeat(6,minmax(72px,1fr));overflow-x:auto}
+}
+@media (prefers-reduced-motion:reduce){
+ .lobby-news-track{animation:none;flex-wrap:wrap;width:auto}
+ .pack-stack,.flip-inner,.flip-card{animation:none;transition:none}
+ .card-holo{background:linear-gradient(118deg,transparent 28%,rgba(255,110,170,.28) 50%,transparent 78%)}
+}

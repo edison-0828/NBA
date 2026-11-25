@@ -7,7 +7,7 @@ const prospects = {
   ace: {name:"埃斯·贝利", en:"Ace Bailey", pos:"SF", num:19, ovr:77, range:[84,95], school:"罗格斯大学", style:"锋线投射", salary:12.4, report:"身高和出手点能帮他在侧翼创造投篮机会，有潜力成为第二得分点。"}
 };
 
-const players = {
+let players = {
   fox: {name:"达龙·福克斯", en:"De’Aaron Fox", pos:"PG", num:4, ovr:84, style:"突破组织", salary:11, next:0, deal:"剩余 1 年"},
   castle: {name:"斯蒂芬·卡斯尔", en:"Stephon Castle", pos:"SG", num:5, ovr:81, style:"外线防守", salary:9.6, next:10.1, deal:"新秀合同"},
   vassell: {name:"德文·瓦塞尔", en:"Devin Vassell", pos:"SF", num:24, ovr:82, style:"接球投射", salary:11, next:11, deal:"长期合同"},
@@ -52,6 +52,14 @@ const rotationPlayers = [
 for (const [id,name,en,pos,num,ovr,style,salary,next] of rotationPlayers) {
   players[id]={name,en,pos,num,ovr,style,salary,next,deal:next ? "剩余 2 年" : "剩余 1 年"};
 }
+players = new Proxy(players, {
+  get(target, prop, receiver) {
+    const value = Reflect.get(target, prop, receiver);
+    const name = typeof prop === "string" ? window.PlayerSkins?.[prop]?.name : "";
+    if (value && typeof value === "object" && name) return {...value, name};
+    return value;
+  }
+});
 
 function allocateRoster(starId) {
   const starPosition = players[starId].pos;
@@ -91,7 +99,10 @@ const initial = () => ({
 const game = document.querySelector("#game");
 const steps = document.querySelector("#steps");
 const mainNav = document.querySelector("#franchise-nav");
-const teamBadge = document.querySelector("#team-badge");
+const topBar = document.querySelector(".top");
+const packLayer = document.querySelector("#pack-layer");
+let pack = null;
+let packTimer = null;
 const toast = document.querySelector("#status");
 const dialog = document.querySelector("#dialog");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
@@ -136,11 +147,16 @@ function announce(message) { toast.textContent = message; }
 
 function photo(id, className = "photo") {
   const p = players[id];
-  const initials = p.en.split(" ").map(part => part[0]).slice(0,2).join("");
+  const skin = window.PlayerSkins?.[id] || {};
+  const initials = (p.en || p.name || "?").split(" ").map(part => part[0]).slice(0,2).join("");
   const hasPortrait = ops.portraitIds.has(id);
   const onCard = className === "card-portrait";
-  const useStill = Boolean(p.photo) && (!hasPortrait || !["card-portrait","mini-photo"].includes(className));
-  const path = useStill ? `assets/${id}.jpg` : hasPortrait ? `assets/portraits/${id}.webp` : "";
+  let useStill = Boolean(p.photo) && (!hasPortrait || !["card-portrait","mini-photo"].includes(className));
+  let path = useStill ? `assets/${id}.jpg` : hasPortrait ? `assets/portraits/${id}.webp` : "";
+  if (skin.portrait) {
+    path = skin.portrait;
+    useStill = skin.fit === "action";
+  }
   const frame = onCard && path ? (useStill ? "is-action" : "is-headshot") : "";
   const img = path ? `<img${frame ? ` class="${frame}"` : ""} src="${path}" alt="" ${["photo","card-portrait"].includes(className) ? 'loading="lazy"' : ""}>` : "";
   return `<span class="${className}" aria-hidden="true"><span class="initial">${initials}</span>${img}</span>`;
@@ -157,6 +173,51 @@ function progression() {
 }
 
 function teamName() { return ui.escape(state.team.name); }
+
+function lobbyBar() {
+  const meta = state.meta;
+  const level = 1 + Math.floor((meta.reputation || 0) / 4);
+  const title = meta.reputation >= 20 ? "资深总经理" : meta.reputation >= 8 ? "球队经理" : "新任总经理";
+  const meter = Math.min(100, (meta.reputation % 4) / 4 * 100);
+  return `<div class="lobby-bar"><div class="lobby-club">${ui.mark(state.team.logo)}<span><b>${teamName()}</b><small>${title} · Lv.${level}</small><span class="lobby-meter"><span style="width:${meter}%"></span></span></span></div><div class="lobby-currencies"><span><small>金币</small><b>${money(meta.cash)}</b></span><span><small>声望</small><b>${meta.reputation}</b></span><span><small>行动力</small><b>${meta.energy} / 6</b></span><span><small>日期</small><b>${ops.date(meta.day)}</b></span></div><button type="button" class="btn lobby-settings" data-action="tab" data-value="settings">设置</button></div>`;
+}
+
+function finishCreate() {
+  const {logo, star} = state.setup;
+  if (!logo || !star || state.team) return;
+  state.team = {name: ui.teamCity(logo), logo, star, cityNamed: true};
+  Object.assign(state, allocateRoster(star));
+  state.view = "office";
+}
+
+function packEntries() {
+  return Object.entries(ui.stars).map(([id, player]) => ({id, player, ovr: player.ovr}));
+}
+
+function startPack(kind) {
+  const entries = packEntries();
+  const focus = kind === "create" ? state.setup.star : entries.reduce((top, entry) => entry.ovr >= top.ovr ? entry : top).id;
+  pack = {kind, phase: reduced.matches ? "done" : "shake", focus, entries, logo: state.team?.logo || state.setup.logo};
+  if (!reduced.matches) queuePack();
+}
+
+function queuePack() {
+  const wait = {shake: 700, beam: 650, fan: 720, flip: 880, hero: 1300}[pack?.phase];
+  if (!wait) return;
+  clearTimeout(packTimer);
+  packTimer = setTimeout(() => {
+    if (!pack) return;
+    const order = ["shake", "beam", "fan", "flip", "hero", "done"];
+    let next = order[order.indexOf(pack.phase) + 1];
+    if (next === "hero") {
+      const focus = pack.entries.find(entry => entry.id === pack.focus);
+      if (!focus || !["holo", "legend"].includes(ui.rarityOf(focus.ovr))) next = "done";
+    }
+    pack.phase = next;
+    render();
+    if (pack && pack.phase !== "done") queuePack();
+  }, wait);
+}
 
 function rating(id) {
   const cap=id===state.team.star?99:84;
@@ -185,14 +246,21 @@ function render(focus = false) {
   document.body.classList.toggle("opening-mode",!state.team);
   document.body.classList.toggle("management-mode",Boolean(state.team));
   const onFlow = Boolean(state.team && state.flow);
-  mainNav.hidden = !state.team;
+  mainNav.hidden = !state.team || Boolean(pack);
   steps.hidden = !onFlow;
-  teamBadge.innerHTML = state.team ? ui.mark(state.team.logo) + '<span><b>' + teamName() + '</b><small>我的球队</small></span>' : "";
+  topBar.innerHTML = state.team ? lobbyBar() : `<div class="team-badge" id="team-badge"></div><span class="management-label">篮球总经理</span>`;
   mainNav.innerHTML = state.team ? ui.navigation(state.view, onFlow) : "";
   steps.innerHTML = stages.map((label, index) => `<span class="step ${index === state.phase ? "current" : index < state.phase ? "done" : ""}" ${index === state.phase ? 'aria-current="step"' : ""}><b>${String(index+1).padStart(2,"0")}</b>${label}</span>`).join("");
   game.innerHTML = !state.team ? ui.wizard(state,button,photo) : onFlow ? [draftScreen, contractScreen, lineupScreen, gameScreen][state.phase]() : ui.dashboard(state,{button,photo,roster,players,money,progress:progression,prospects,rating,practicePlayer,tactics});
   if(!state.team && state.setup.step===2) state.setup.dealt=true;
   if (!state.team) ui.filterOpeningLogos(game,state.setup);
+  if (pack) {
+    packLayer.hidden = false;
+    packLayer.innerHTML = ui.packMarkup(pack, {photo, button});
+  } else {
+    packLayer.hidden = true;
+    packLayer.innerHTML = "";
+  }
   if (focus) {
     game.focus();
     window.scrollTo(0, 0);
@@ -418,10 +486,22 @@ const actions = {
   "setup-next"() { if (state.setup.logo) state.setup.step=2; },
   "create-team"() {
     const {logo,star}=state.setup;
-    if (!logo || !star || state.team) return;
-    state.team={name:ui.teamCity(logo),logo,star,cityNamed:true};
-    Object.assign(state,allocateRoster(star));
-    state.view="office";
+    if (!logo || !star || state.team || pack) return;
+    if (reduced.matches) finishCreate();
+    else startPack("create");
+  },
+  "pack-demo"() { if (!pack) startPack("demo"); },
+  "pack-skip"() {
+    if (!pack) return;
+    clearTimeout(packTimer);
+    pack.phase="done";
+  },
+  "pack-close"() {
+    if (!pack) return;
+    const kind=pack.kind;
+    clearTimeout(packTimer);
+    pack=null;
+    if (kind==="create") finishCreate();
   },
   tab(id) {
     if (!state.team || !Object.hasOwn(ui.tabs,id)) return;
@@ -583,16 +663,25 @@ function liftCard(event, on) {
   if (event.relatedTarget && card.contains(event.relatedTarget)) return;
   card.classList.remove("is-lifted");
 }
+function trackHolo(event) {
+  const card = event.target.closest?.(".roster-cover.rarity-holo");
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  card.style.setProperty("--hx", `${((event.clientX - rect.left) / rect.width * 100).toFixed(1)}%`);
+  card.style.setProperty("--hy", `${((event.clientY - rect.top) / rect.height * 100).toFixed(1)}%`);
+}
+game.addEventListener("pointermove", trackHolo);
+packLayer.addEventListener("pointermove", trackHolo);
 game.addEventListener("pointerover", event => liftCard(event, true));
 game.addEventListener("pointerout", event => liftCard(event, false));
 game.addEventListener("pointercancel", event => liftCard(event, false));
 game.addEventListener("pointerup", event => { if (event.pointerType === "touch") liftCard(event, false); });
 
-game.addEventListener("load",event=>{
+document.addEventListener("load",event=>{
   if (event.target instanceof HTMLImageElement) event.target.classList.add("is-loaded");
 },true);
 
-game.addEventListener("error",event=>{
+document.addEventListener("error",event=>{
   if (event.target instanceof HTMLImageElement) event.target.hidden=true;
 },true);
 
