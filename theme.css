@@ -283,8 +283,12 @@ body.opening-mode #game{min-height:100%}
 .coach-icon{width:54px;height:68px;display:grid;place-items:center;border-radius:8px;background:#1a140f;border:1px solid var(--line);font-size:24px}
 .season-summary{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
 .season-summary b{font-size:32px;color:var(--gold-2)}
-.fixture-line{justify-content:space-between}
-.fixture-date{width:120px;color:var(--gold)}
+.season-calendar{min-height:0}
+.fixture-list{max-height:46vh;overflow:auto}
+.fixture-line{display:grid;grid-template-columns:7.6em 32px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;padding:2px 0}
+.fixture-date{color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fixture-line .fixture-logo{width:32px;height:32px;flex:0 0 32px}
+.fixture-result{white-space:nowrap}
 .win-result{color:#8dffa8}
 .record-row{display:grid;grid-template-columns:42px 1fr 48px 48px;gap:8px;align-items:center;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 4px;color:inherit}
 .record-head{color:var(--muted);font-size:13px}
@@ -389,7 +393,17 @@ dialog::backdrop{background:rgba(0,0,0,.62)}
 .card-back{display:block;width:100%;height:100%;border-radius:16px;position:relative;border:3px solid #e6c36a;background:radial-gradient(circle at 50% 42%,rgba(230,190,90,.35),transparent 36%),linear-gradient(180deg,#1a2b4d,#0c1730);box-shadow:inset 0 0 0 5px rgba(26,48,92,.9)}
 .card-back-ring{position:absolute;inset:24%;border:2px solid rgba(240,200,100,.85);border-radius:12px;transform:rotate(45deg)}
 .card-back-gem{position:absolute;left:50%;top:50%;width:22%;height:22%;transform:translate(-50%,-50%) rotate(45deg);background:linear-gradient(135deg,#fff1c4,#e0a322)}
-.nba-logo img{width:100%;height:auto;display:block}
+.nba-logo{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;overflow:hidden}
+.nba-logo img{width:100%;height:100%;object-fit:contain;display:block}
+.nba-logo.hud-crest{width:clamp(28px,8vh,40px);height:clamp(28px,8vh,40px);flex-basis:clamp(28px,8vh,40px)}
+.nba-logo.hud-level-crest{width:22px;height:22px;flex-basis:22px}
+.nba-logo.card-team-logo{width:16%;height:auto;aspect-ratio:1;max-width:36px;max-height:36px;flex:none}
+.nba-logo.platform-crest{width:clamp(52px,14vh,96px);height:clamp(52px,14vh,96px);flex:none}
+.nba-logo.news-crest{width:24px;height:24px;flex-basis:24px}
+.nba-logo.opening-team-logo,.logo-choice .nba-logo{width:40px;height:40px;flex-basis:40px}
+.nba-logo.big-mark{width:48px;height:48px;flex-basis:48px}
+.vs-board .nba-logo{width:clamp(36px,9vh,52px);height:clamp(36px,9vh,52px);flex-basis:auto}
+.record-row .nba-logo{width:28px;height:28px;flex:0 0 28px}
 
 .opening-brand{font-size:clamp(22px,6vh,36px)}
 .opening-page{height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:8px 3vw 8px}

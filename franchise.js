@@ -9,8 +9,8 @@ const stars={
 };
 const ops=window.TeamOps;
 const marks=ops.byTeam;
-const tabs={office:["大厅","⌂"],season:["赛季","▦"],players:["阵容","♙"],training:["训练","◇"],market:["市场","⇄"],packs:["开包","▣"],league:["联盟","◎"],settings:["设置","⚙"]};
-const menu=["season","players","training","market","packs","league"];
+const tabs={office:["首页","⌂"],season:["赛季","▦"],players:["阵容","♙"],training:["训练","◇"],market:["市场","⇄"],packs:["开包","▣"],league:["联盟","◎"],settings:["设置","⚙"]};
+const menu=["office","season","players","training","market","packs","league"];
 const escape=text=>String(text).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
 const mark=(id,extra="")=>`<span class="fr-mark nba-logo ${extra}" aria-hidden="true"><img src="assets/teams/${marks[id]?id:"sa"}.svg" alt=""></span>`;
 const teamIdentities={
@@ -36,6 +36,7 @@ const arenas={
  sac:"金州中心",sa:"霜库中心",tor:"丰业银行球馆",utah:"德尔塔中心",wsh:"首都体育馆"
 };
 const iconPaths={
+ home:'<path fill="currentColor" d="M6 22 24 8l18 14v18H30V28H18v12H6V22z"/>',
  trophy:'<path fill="currentColor" d="M16 6h16v9a8 8 0 0 1-16 0V6zm-2 3h-6a8 8 0 0 0 7 8v-4h-1V9zm20 0v4h-1v4a8 8 0 0 0 7-8h-6zM21 26h6v5h7v5H14v-5h7v-5z"/>',
  jersey:'<path fill="currentColor" d="M14 8l10 6 10-6 9 7-6 6v21H11V21l-6-6 9-7z"/>',
  dumbbell:'<path fill="currentColor" d="M6 18h6v12H6zm8-4h6v20h-6zm16 0h6v20h-6zm8 4h6v12h-6zM18 21h12v6H18z"/>',
@@ -141,7 +142,7 @@ function wizard(state,button,photo){
  return `<section class="setup-page opening-page"><header class="opening-hero"><div class="opening-brand">篮球总经理</div><p>从建队开始，执掌你的球队。</p></header><div class="setup-steps">${labels.map((label,index)=>`<span ${step===index+1?'aria-current="step"':""} class="${step===index+1?"current":""}">${index+1} ${label}</span>`).join("")}</div><section class="create-panel ${pickingLogo?"opening-picker":""}"><h1>${pickingLogo?"选择球队队标":"选择当家球星"}</h1><p class="muted">${pickingLogo?"30 支球队队标":teamCity(logo)+" · 选择一名球星加入首发"}</p>${content}</section></section>`;
 }
 function navigation(active,flow){
- const glyphs={season:"trophy",players:"jersey",training:"dumbbell",market:"cart",packs:"pack",league:"shield"};
+ const glyphs={office:"home",season:"trophy",players:"jersey",training:"dumbbell",market:"cart",packs:"pack",league:"shield"};
  return menu.map(id=>{
   const [label]=tabs[id];
   return `<button type="button" class="rail-btn" data-action="tab" data-value="${id}" ${id===active&&!flow?'aria-current="page"':""}>${icon(glyphs[id])}<span>${label}</span></button>`;
@@ -258,7 +259,7 @@ function fixtureLine(fixture,button){
  const {index,team,result,day}=fixture;
  const outcome=result?result.home>result.away?"胜":"负":"";
  const time=day!==null?ops.date(day):index===0?"揭幕战":"揭幕战后 "+fixture.offset+" 天";
- return `<div class="fixture-line"><span class="fixture-date">${time}</span>${mark(team.id)}<div><b>${teamCity(team.id)}${team.name}</b><small>${index===0?"揭幕战":"常规赛 · 主场"}</small></div><div class="fixture-result"><span class="${outcome==="胜"?"win-result":""}">${result?outcome+" "+result.home+" : "+result.away:"待赛"}</span>${index===0&&result?button("战报","open-flow",{value:"3"}):""}</div></div>`;
+ return `<div class="fixture-line"><span class="fixture-date">${time}</span>${mark(team.id,"fixture-logo")}<b>${teamCity(team.id)}${team.name}</b><span class="fixture-result${outcome==="胜"?" win-result":""}">${result?outcome+" "+result.home+" : "+result.away:"待赛"}</span>${index===0&&result?button("战报","open-flow",{value:"3"}):""}</div>`;
 }
 function seasonPage(state,{button,progress}){
  const [wins,losses]=ops.ownRecord(state);
@@ -267,7 +268,7 @@ function seasonPage(state,{button,progress}){
  const complete=games.every(game=>game.result);
  return `<section class="season-summary" aria-label="球队战绩"><div><small>胜场</small><b>${wins}</b></div><div><small>负场</small><b>${losses}</b></div><div><small>胜率</small><b>${total?Math.round(wins/total*100)+"%":"—"}</b></div></section>
  <section class="panel season-calendar"><div class="panel-head"><h2>赛季日程</h2><span class="muted">${total} / ${games.length} 场</span></div>
- ${games.map(game=>fixtureLine(game,button)).join("")}
+ <div class="fixture-list">${games.map(game=>fixtureLine(game,button)).join("")}</div>
  <div class="actions">${state.result?button(complete?"赛季已结束":"推进一天","advance-day",{primary:true,disabled:complete}):button(progress()===3?"进入揭幕战":"继续赛季准备","open-flow",{value:String(progress()),primary:true})}</div>
  <p class="muted">${state.result?"推进日期时自动模拟当天的常规赛。":"揭幕战结算后会锁定常规赛日期。"}</p></section>`;
 }

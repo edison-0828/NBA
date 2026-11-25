@@ -108,6 +108,7 @@ const dialog = document.querySelector("#dialog");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 let replay = null;
 let state = readSave();
+if (state.team && !state.flow) state.view = "office";
 if (state.result && state.meta.seasonOrigin===null) {
   state.meta.seasonOrigin=state.meta.day;
   state.meta.seasonClub=state.team.logo;
