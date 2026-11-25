@@ -133,7 +133,7 @@ function newsLine(state,players){
   const player=players[id];
   if(player) bits.push(`签下 ${player.name}`);
  }
- if(state.meta.coach&&ops.coaches[state.meta.coach]) bits.push(`主教练 ${ops.coaches[state.meta.coach].name} 到任`);
+ if(state.meta.coach&&ops.coaches[state.meta.coach]) bits.push(`主教练 ${window.skinName(state.meta.coach,ops.coaches[state.meta.coach].name)} 到任`);
  if(bits.length===1) bits.push("休赛期进行中，完成选秀和合同后开启揭幕战");
  return bits.join("    ·    ");
 }
@@ -189,7 +189,7 @@ function marketPage(state,{button,photo,prospects}){
   if(!p)return "";
   const coach=Object.hasOwn(ops.coaches,id);
   const sign=p.years?`${p.years} 年 · $${p.salary.toFixed(1)}M / 年`:"首轮新秀 · 通过选秀签约";
-  return `<article class="market-item">${coach?'<span class="coach-icon" aria-hidden="true">⌂</span>':photo(id,"mini-photo")}<div><h3>${p.name}</h3><p>${coach?"主教练":p.pos} · ${p.style}</p><small>${sign}</small></div>${button("详情","market-detail",{value:id})}</article>`;
+  return `<article class="market-item">${coach?'<span class="coach-icon" aria-hidden="true">⌂</span>':photo(id,"mini-photo")}<div><h3>${escape(window.skinName(id,p.name))}</h3><p>${coach?"主教练":p.pos} · ${p.style}</p><small>${sign}</small></div>${button("详情","market-detail",{value:id})}</article>`;
  }).join("");
  return `<section class="market-hub"><div class="subtabs">${sub}</div><p class="muted market-note">${tab==="free"?"模拟自由市场 · 查看报价并直接签约":tab==="coach"?"选择执教风格，聘用主教练":tab==="rookie"?"比较新秀并前往选秀大会":"已关注的球员和教练"}</p>
  ${cards||'<p class="panel muted">暂无关注。在球员或教练详情中点「加入关注」。</p>'}
@@ -204,7 +204,7 @@ function marketDetail(state,id,{button,photo,prospects,money,payroll,cap}){
  const affordable=state.meta.energy>=2&&state.meta.cash>=p.salary&&(kind!=="free"||payroll()+p.salary<=cap);
  const terms=kind==="rookie" ? `预计首年 ${money(p.salary)} · 首轮新秀合同` : `${p.years} 年 · ${money(p.salary)} / 年`;
  const action=kind==="rookie" ? button("前往选秀","open-flow",{value:"0",primary:true}) : button(signed?"已签约":affordable?(kind==="coach"?"聘为主教练":"确认签约"):"资金、薪资空间或行动力不足","market-sign",{value:id,primary:true,disabled:signed||!affordable});
- return {title:p.name,content:`<div class="market-detail-body">${kind==="coach"?'<span class="coach-icon" aria-hidden="true">⌂</span>':photo(id,"mini-photo")}<div><strong>${p.en}</strong><p>${kind==="coach"?"主教练":p.pos} · ${p.style} · 评分 ${p.ovr}</p></div></div>
+ return {title:escape(window.skinName(id,p.name)),content:`<div class="market-detail-body">${kind==="coach"?'<span class="coach-icon" aria-hidden="true">⌂</span>':photo(id,"mini-photo")}<div><strong>${p.en}</strong><p>${kind==="coach"?"主教练":p.pos} · ${p.style} · 评分 ${p.ovr}</p></div></div>
  <p>${p.report}</p><p><b>${terms}</b></p>${kind==="rookie"?`<p>游戏潜力 ${p.range.join("–")}</p>`:`<p class="muted">签约时支付首年费用，扣除 2 点行动力。${kind==="coach"&&state.meta.coach&&!signed?"签约后将更换现任主教练。":""}</p>`}
  <div class="actions">${button(followed?"取消关注":"加入关注","market-watch",{value:id})}${action}</div><div class="actions">${button("关闭","close")}</div>`};
 }

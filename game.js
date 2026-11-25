@@ -272,7 +272,7 @@ function draftScreen() {
   const scouted = state.scouted.includes(state.selected);
   const cards = Object.entries(prospects).map(([id, p]) =>
     `<button type="button" class="card" data-action="select" data-value="${id}" aria-pressed="${id === state.selected}" ${state.draft ? "disabled" : ""}>
-      ${photo(id)}<b>${p.name}</b><small>${p.school} · ${p.pos}</small><small class="rating">即战力 ${p.ovr} · ${p.style}</small>
+      ${photo(id)}<b>${window.skinName(id,p.name)}</b><small>${p.school} · ${p.pos}</small><small class="rating">即战力 ${p.ovr} · ${p.style}</small>
     </button>`).join("");
   return `<section class="hero">
     ${photo(state.team.star,"hero-photo")}
@@ -281,7 +281,7 @@ function draftScreen() {
   <div class="panel-head"><h2>新秀看板</h2><span class="muted">球探名额 ${2-state.scouted.length} / 2</span></div>
   <div class="cards">${cards}</div>
   <section class="report ${state.draft ? "reveal" : ""}">
-    <h3>${state.draft ? teamName() + "选中 " : ""}${current.name} ${state.draft ? '<span class="stamp">榜眼</span>' : ""}</h3>
+    <h3>${state.draft ? teamName() + "选中 " : ""}${window.skinName(state.selected,current.name)} ${state.draft ? '<span class="stamp">榜眼</span>' : ""}</h3>
     <p class="muted">${current.en} · ${current.style} · 潜力 ${scouted ? current.range.join("–") : "待球探评估"}</p>
     <p>${scouted ? current.report : "使用球探名额查看潜力区间和战术适配。"}</p>
   </section>
@@ -328,7 +328,7 @@ function contractScreen() {
   const stopped = Boolean(state.veteran);
   const years = state.offer.years;
   return `<div class="intro"><span class="eyebrow">FRONT OFFICE</span><h1>合同中心</h1><p>先锁定榜眼，再决定是否留下克里斯·保罗。</p></div>
-  <section class="panel"><h3>${rookie.name} · 榜眼合同</h3><p class="muted">首年 ${money(rookie.salary)} · 前两年保障 · 后两年球队选项</p>
+  <section class="panel"><h3>${window.skinName(state.draft,rookie.name)} · 榜眼合同</h3><p class="muted">首年 ${money(rookie.salary)} · 前两年保障 · 后两年球队选项</p>
   <div class="actions">${state.rookieSigned ? '<span class="stamp">已签约</span>' : button("签署新秀合同","sign-rookie",{primary:true})}</div></section>
   <section class="panel"><h3>克里斯·保罗 · ${stopped ? (state.veteran.kind === "signed" ? "续约完成" : "进入自由市场") : "续约谈判"}</h3>
   <p class="muted">${stopped ? "工资表已计入你的决定。" : "球员优先考虑保障年限，也看重能自己决定去留的选项。"}</p>
@@ -568,7 +568,7 @@ document.addEventListener("click",event=>{
         state.meta.reputation+=2;
         save();
         render();
-        announce(p.name+"已签约");
+        announce(window.skinName(value,p.name)+"已签约");
       }
     }
     const detail=action==="team-detail"?ops.teamDetail(state,value,context):action==="player-detail"?ui.playerDetail(state,value,context):ui.marketDetail(state,value,context);

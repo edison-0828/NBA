@@ -83,6 +83,10 @@ function status(meta,money){
  const stats=[["日期",date(meta.day)],["可用资金",money(meta.cash)],["声望",meta.reputation],["称号",title],["行动力",meta.energy+" / 6"]];
  return `<section class="office-status" aria-label="球队状态">${stats.map(([label,value])=>`<div><small>${label}</small><strong>${value}</strong></div>`).join("")}</section>`;
 }
+function skinFace(id){
+ const src=window.skinPortrait?.(id);
+ return src?`<img class="skin-mini" src="${src}" alt="">`:"";
+}
 function teamRecord(state,team){
  const [wins,losses]=state.meta.records[team.id]??[0,0];
  const games=schedule(state).filter(game=>game.opponent===team.id&&game.result);
@@ -113,16 +117,16 @@ function teamDetail(state,id,{mark,escape,button,money,players,roster,rating,pay
  if(id===state.team.logo){
   const [w,l]=ownRecord(state);
   const ids=roster();
-  const coach=coaches[state.meta.coach]?.name||"待聘任";
+  const coach=state.meta.coach&&coaches[state.meta.coach]?window.skinName(state.meta.coach,coaches[state.meta.coach].name):"待聘任";
   return {title:escape(state.team.name),content:`<div class="team-detail-heading">${mark(id,"big-mark")}<div><strong>我的球队</strong><p>${team.conference==="E"?"东部":"西部"} · ${w}胜 ${l}负</p></div></div>
   <dl class="detail-data"><div><dt>主教练</dt><dd>${coach}</dd></div><div><dt>阵容人数</dt><dd>${ids.length} 人</dd></div><div><dt>可用资金</dt><dd>${money(state.meta.cash)}</dd></div><div><dt>球队薪资</dt><dd>${money(payroll())}</dd></div></dl>
-  <h3>球队名单</h3><div class="detail-roster">${ids.map(key=>`<div><b>${players[key].name}</b><span>${players[key].pos} · ${rating(key)}</span></div>`).join("")}</div>${button("关闭","close")}`};
+  <h3>球队名单</h3><div class="detail-roster">${ids.map(key=>`<div>${skinFace(key)}<b>${escape(window.skinName(key,players[key].name))}</b><span>${players[key].pos} · ${rating(key)}</span></div>`).join("")}</div>${button("关闭","close")}`};
  }
  const [w,l]=teamRecord(state,team);
  const {cash,payroll:teamPay}=teamBudget(state,team);
  return {title:team.name,content:`<div class="team-detail-heading">${mark(id,"big-mark")}<div><strong>${escape(team.en)}</strong><p>${team.conference==="E"?"东部":"西部"} · ${w}胜 ${l}负</p></div></div>
- <dl class="detail-data"><div><dt>主教练</dt><dd>${escape(team.coach)}</dd></div><div><dt>执教经历</dt><dd>${team.experience??"—"} 年</dd></div><div><dt>可用资金</dt><dd>${money(cash)}</dd></div><div><dt>球队薪资</dt><dd>${money(teamPay)}</dd></div></dl>
- <h3>球队名单 · ${team.roster.length} 人</h3><div class="detail-roster">${team.roster.map(p=>`<div><b>${escape(p.name)}</b><span>${p.pos} · ${p.age??"—"} 岁</span></div>`).join("")}</div><p class="muted">人员使用资料快照，战绩和资金来自游戏模拟。</p>${button("关闭","close")}`};
+ <dl class="detail-data"><div><dt>主教练</dt><dd>${escape(window.skinCoach(id,team.coach))}</dd></div><div><dt>执教经历</dt><dd>${team.experience??"—"} 年</dd></div><div><dt>可用资金</dt><dd>${money(cash)}</dd></div><div><dt>球队薪资</dt><dd>${money(teamPay)}</dd></div></dl>
+ <h3>球队名单 · ${team.roster.length} 人</h3><div class="detail-roster">${team.roster.map(p=>`<div>${skinFace(p.id)}<b>${escape(window.skinName(p.id,p.name))}</b><span>${p.pos} · ${p.age??"—"} 岁</span></div>`).join("")}</div><p class="muted">人员使用资料快照，战绩和资金来自游戏模拟。</p>${button("关闭","close")}`};
 }
 window.TeamOps={teams,byTeam,portraitIds,free,coaches,marketTabs,fresh,date,nextDay,status,standings,teamDetail,schedule,ownRecord,drills,practiceProgress,simulateDueGames};
 })();

@@ -113,6 +113,10 @@
 .lobby-news-track span{padding:8px 28px;white-space:nowrap;color:#d5deee;font-size:13px}
 @keyframes news-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .pack-placeholder p{margin-top:8px;color:#c5d0e2}
+.detail-roster div{align-items:center;justify-content:flex-start;gap:8px}
+.detail-roster b{flex:1;min-width:0}
+.detail-roster span{margin-left:auto}
+.detail-roster .skin-mini{width:32px;height:42px;object-fit:contain;object-position:center top;border-radius:4px;background:#1a2740;flex:none}
 
 @media (min-width:900px){
  body.management-mode{padding-bottom:0}
