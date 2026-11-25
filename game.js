@@ -198,29 +198,100 @@ function packEntries() {
   return Object.entries(ui.stars).map(([id, player]) => ({id, player, ovr: player.ovr}));
 }
 
+let packToken = 0;
+let packAnims = [];
+function portraitSrc(id) {
+  const skin = window.PlayerSkins?.[id]?.portrait;
+  if (skin) return skin;
+  const person = players[id];
+  if (!person) return "";
+  if (person.photo && !ops.portraitIds.has(id)) return `assets/${id}.jpg`;
+  if (ops.portraitIds.has(id)) return `assets/portraits/${id}.webp`;
+  return person.photo ? `assets/${id}.jpg` : "";
+}
+function preloadPack(entries) {
+  return Promise.all(entries.map(entry => {
+    const src = portraitSrc(entry.id);
+    if (!src) return Promise.resolve();
+    const img = new Image();
+    img.src = src;
+    const ready = img.decode ? img.decode().catch(() => {}) : Promise.resolve();
+    return Promise.race([ready, new Promise(resolve => setTimeout(resolve, 350))]);
+  }));
+}
+function stopPackMotion() {
+  packToken++;
+  clearTimeout(packTimer);
+  packAnims.forEach(anim => anim.cancel());
+  packAnims = [];
+}
+function playPack() {
+  const token = ++packToken;
+  const root = packLayer.querySelector(".pack-stage");
+  if (!root || !pack || pack.phase !== "play") return;
+  const stack = root.querySelector(".pack-stack");
+  const beam = root.querySelector(".pack-beam");
+  const cards = [...root.querySelectorAll(".flip-card")];
+  const actions = root.querySelector(".pack-actions");
+  const focus = root.querySelector(".flip-card.is-focus");
+  const track = anim => { if (anim) packAnims.push(anim); };
+  const spring = "cubic-bezier(.16,1,.3,1)";
+  if (actions) actions.style.pointerEvents = "none";
+  cards.forEach(card => { card.style.willChange = "transform, opacity"; });
+  track(stack?.animate([
+    {transform:"translate3d(0,0,0) rotate(0deg)"},
+    {transform:"translate3d(-7px,0,0) rotate(-2.5deg)", offset:.22},
+    {transform:"translate3d(7px,0,0) rotate(2.5deg)", offset:.48},
+    {transform:"translate3d(-4px,0,0) rotate(-1.4deg)", offset:.72},
+    {transform:"translate3d(0,-8px,0) rotate(0deg)"}
+  ], {duration:680, easing:"ease-in-out", fill:"forwards"}));
+  track(beam?.animate([
+    {opacity:0, transform:"scaleY(.25)"},
+    {opacity:.95, transform:"scaleY(1)"}
+  ], {duration:360, delay:540, easing:"cubic-bezier(.2,.8,.2,1)", fill:"forwards"}));
+  track(stack?.animate([
+    {opacity:1, offset:0},
+    {opacity:1, offset:.8},
+    {opacity:0}
+  ], {duration:980, easing:"linear", fill:"forwards"}));
+  cards.forEach((card, index) => {
+    const shift = index - (cards.length - 1) / 2;
+    track(card.animate([
+      {opacity:0, transform:"translate3d(0,16px,0) rotate(0deg) scale(.9)"},
+      {opacity:1, transform:`translate3d(${shift * 4}px,0,0) rotate(${shift * 8}deg) scale(1)`}
+    ], {duration:500, delay:820 + index * 60, easing:spring, fill:"forwards"}));
+    const inner = card.querySelector(".flip-inner");
+    if (inner) inner.style.willChange = "transform";
+    track(inner?.animate([
+      {transform:"rotateY(0deg)"},
+      {transform:"rotateY(180deg)"}
+    ], {duration:460, delay:1320 + index * 75, easing:"cubic-bezier(.45,0,.2,1)", fill:"forwards"}));
+  });
+  if (focus) {
+    const index = cards.indexOf(focus);
+    const shift = index - (cards.length - 1) / 2;
+    track(focus.animate([
+      {transform:`translate3d(${shift * 4}px,0,0) rotate(${shift * 8}deg) scale(1)`},
+      {transform:"translate3d(0,-6px,0) rotate(0deg) scale(1.1)"}
+    ], {duration:420, delay:1320 + cards.length * 75 + 40, easing:spring, fill:"forwards"}));
+  }
+  const finishAt = 1320 + cards.length * 75 + 480;
+  track(actions?.animate([{opacity:0},{opacity:1}], {duration:260, delay:finishAt, easing:"ease-out", fill:"forwards"}));
+  packTimer = setTimeout(() => {
+    if (token !== packToken || !pack) return;
+    if (actions) actions.style.pointerEvents = "";
+    cards.forEach(card => { card.style.willChange = ""; });
+    root.querySelectorAll(".flip-inner").forEach(node => { node.style.willChange = ""; });
+    pack.phase = "done";
+  }, finishAt + 280);
+  preloadPack(pack.entries);
+}
 function startPack(kind) {
   const entries = packEntries();
   const focus = kind === "create" ? state.setup.star : entries.reduce((top, entry) => entry.ovr >= top.ovr ? entry : top).id;
-  pack = {kind, phase: reduced.matches ? "done" : "shake", focus, entries, logo: state.team?.logo || state.setup.logo, cash: state.meta.cash, gems: state.meta.reputation};
-  if (!reduced.matches) queuePack();
-}
-
-function queuePack() {
-  const wait = {shake: 700, beam: 650, fan: 720, flip: 880, hero: 1300}[pack?.phase];
-  if (!wait) return;
-  clearTimeout(packTimer);
-  packTimer = setTimeout(() => {
-    if (!pack) return;
-    const order = ["shake", "beam", "fan", "flip", "hero", "done"];
-    let next = order[order.indexOf(pack.phase) + 1];
-    if (next === "hero") {
-      const focus = pack.entries.find(entry => entry.id === pack.focus);
-      if (!focus || !["holo", "legend"].includes(ui.rarityOf(focus.ovr))) next = "done";
-    }
-    pack.phase = next;
-    render();
-    if (pack && pack.phase !== "done") queuePack();
-  }, wait);
+  stopPackMotion();
+  pack = {kind, phase: reduced.matches ? "done" : "play", focus, entries, logo: state.team?.logo || state.setup.logo, cash: state.meta.cash, gems: state.meta.reputation};
+  render();
 }
 
 function rating(id) {
@@ -260,10 +331,16 @@ function render(focus = false) {
   if (!state.team) ui.filterOpeningLogos(game,state.setup);
   if (pack) {
     packLayer.hidden = false;
-    packLayer.innerHTML = ui.packMarkup(pack, {photo, button});
+    const stamp = `${pack.kind}:${pack.phase}:${pack.focus}`;
+    if (packLayer.dataset.stamp !== stamp) {
+      packLayer.dataset.stamp = stamp;
+      packLayer.innerHTML = ui.packMarkup(pack, {photo, button});
+      if (pack.phase === "play") requestAnimationFrame(playPack);
+    }
   } else {
     packLayer.hidden = true;
     packLayer.innerHTML = "";
+    delete packLayer.dataset.stamp;
   }
   if (focus) {
     game.focus();
@@ -493,19 +570,20 @@ const actions = {
   "pack-demo"() { if (!pack) startPack("demo"); },
   "pack-again"() {
     if (!pack || pack.kind==="create") return;
-    clearTimeout(packTimer);
+    stopPackMotion();
     startPack("demo");
   },
   "pack-skip"() {
     if (!pack) return;
     if (pack.phase==="done") { actions["pack-close"](); return; }
-    clearTimeout(packTimer);
+    stopPackMotion();
     pack.phase="done";
+    render();
   },
   "pack-close"() {
     if (!pack) return;
     const kind=pack.kind;
-    clearTimeout(packTimer);
+    stopPackMotion();
     pack=null;
     if (kind==="create") finishCreate();
   },
@@ -691,5 +769,15 @@ document.addEventListener("error",event=>{
   if (event.target instanceof HTMLImageElement) event.target.hidden=true;
 },true);
 
+packLayer.addEventListener("click", event => {
+  if (!pack || pack.phase === "done" || event.target.closest("button")) return;
+  actions["pack-skip"]();
+});
+document.querySelector("#rotate-go")?.addEventListener("click", async () => {
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    if (screen.orientation?.lock) await screen.orientation.lock("landscape");
+  } catch {}
+});
 render();
 })();

@@ -3,7 +3,7 @@
 const stars={
  shai:{name:"谢伊·吉尔杰斯-亚历山大",en:"Shai Gilgeous-Alexander",pos:"PG",num:2,ovr:98,style:"持球攻坚",salary:38,photo:true},
  edwards:{name:"安东尼·爱德华兹",en:"Anthony Edwards",pos:"SG",num:5,ovr:95,style:"突破 · 三分",salary:34,photo:true},
- brown:{name:"杰伦·布朗",en:"Jaylen Brown",pos:"SF",num:7,ovr:94,style:"锋线攻防",salary:37,photo:true},
+ brown:{name:"杰伦·布朗",en:"Jaylen Brown",pos:"SF",num:7,ovr:96,style:"锋线攻防",salary:37,photo:true},
  giannis:{name:"扬尼斯·阿德托昆博",en:"Giannis Antetokounmpo",pos:"PF",num:34,ovr:97,style:"冲筐 · 协防",salary:37,photo:true},
  wemby:{name:"维克托·文班亚马",en:"Victor Wembanyama",pos:"C",num:1,ovr:97,style:"护框 · 顺下",salary:13.4,photo:true}
 };
@@ -203,18 +203,18 @@ function packMarkup(pack,{photo,button}){
  const best=pack.entries.reduce((top,entry)=>entry.ovr>=top.ovr?entry:top,pack.entries[0]);
  const tier=rarityOf(best.ovr);
  const titles={holo:"全息降临！",legend:"传奇降临！",gold:"黄金开包",silver:"球星开包",bronze:"球星开包"};
- const flipped=pack.phase==="flip"||pack.phase==="hero"||pack.phase==="done";
- const showStack=pack.phase==="shake"||pack.phase==="beam";
  const cards=pack.entries.map((entry,index)=>{
-  const hero=pack.phase==="hero"&&entry.id===pack.focus?" is-hero":"";
+  const focus=entry.id===pack.focus?" is-focus":"";
   const front=collectibleCard({id:entry.id,player:entry.player,ovr:entry.ovr,logo:pack.logo,photo,action:"pack-hold"});
-  return `<div class="flip-card${flipped?" is-flipped":""}${hero}" style="--fan:${(index-(pack.entries.length-1)/2)*14}deg;--i:${index}"><div class="flip-inner"><div class="flip-face front">${front}</div><div class="flip-face back">${cardBack()}</div></div></div>`;
+  const fan=(index-(pack.entries.length-1)/2)*8;
+  return `<div class="flip-card${focus}" data-id="${entry.id}" style="--fan:${fan}deg;--i:${index}"><div class="flip-inner"><div class="flip-face front">${front}</div><div class="flip-face back">${cardBack()}</div></div></div>`;
  }).join("");
  const doneActions=pack.kind==="create"
   ? button("进入球队","pack-close",{primary:true})
   : `${button("再开一包","pack-again",{primary:true})}${button("收入阵容","pack-close")}`;
  const cash=pack.cash==null?"":`<div class="hud-pill is-gold"><span class="pill-ico">${icon("coin")}</span><small>金币</small><b>$${Number(pack.cash).toFixed(1)}M</b></div><div class="hud-pill is-gem"><span class="pill-ico">${icon("gem")}</span><small>钻石</small><b>${pack.gems??0}</b></div>`;
- return `<div class="pack-stage" data-phase="${pack.phase}" data-beam="${tier}"><header class="pack-hud"><button type="button" class="hud-icon" data-action="pack-skip" aria-label="跳过">${icon("back")}</button>${cash}</header><h1 class="pack-title">${titles[tier]}</h1><div class="pack-beam" aria-hidden="true"></div>${showStack?`<div class="pack-stack">${cardBack()}${cardBack()}${cardBack()}</div>`:""}<div class="pack-fan">${cards}</div><div class="pack-actions">${pack.phase==="done"?doneActions:""}</div></div>`;
+ const reduced=pack.phase==="done"?"1":"0";
+ return `<div class="pack-stage" data-beam="${tier}" data-reduced="${reduced}"><header class="pack-hud"><button type="button" class="hud-icon" data-action="pack-skip" aria-label="跳过">${icon("back")}</button>${cash}</header><h1 class="pack-title">${titles[tier]}</h1><div class="pack-beam" aria-hidden="true"></div><div class="pack-stack" aria-hidden="true">${cardBack()}${cardBack()}${cardBack()}</div><div class="pack-fan">${cards}</div><div class="pack-actions">${doneActions}</div></div>`;
 }
 function marketItems(prospects){
  const source={...ops.free,...ops.coaches,...prospects};
