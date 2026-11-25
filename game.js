@@ -178,8 +178,10 @@ function lobbyBar() {
   const meta = state.meta;
   const level = 1 + Math.floor((meta.reputation || 0) / 4);
   const title = meta.reputation >= 20 ? "资深总经理" : meta.reputation >= 8 ? "球队经理" : "新任总经理";
-  const meter = Math.min(100, (meta.reputation % 4) / 4 * 100);
-  return `<div class="lobby-bar"><div class="lobby-club">${ui.mark(state.team.logo)}<span><b>${teamName()}</b><small>${title} · Lv.${level}</small><span class="lobby-meter"><span style="width:${meter}%"></span></span></span></div><div class="lobby-currencies"><span><small>金币</small><b>${money(meta.cash)}</b></span><span><small>声望</small><b>${meta.reputation}</b></span><span><small>行动力</small><b>${meta.energy} / 6</b></span><span><small>日期</small><b>${ops.date(meta.day)}</b></span></div><button type="button" class="btn lobby-settings" data-action="tab" data-value="settings">设置</button></div>`;
+  const rest = meta.reputation % 4;
+  const meter = meta.reputation === 0 ? 8 : rest === 0 ? 100 : rest / 4 * 100;
+  const nickname = ui.marks[state.team.logo]?.name || "";
+  return `<div class="hud"><div class="hud-club">${ui.mark(state.team.logo,"hud-crest")}<div><b>${teamName()}</b><small>${nickname}王朝</small></div></div><div class="hud-level">${ui.mark(state.team.logo,"hud-level-crest")}<div><b>经理 Lv.${level}</b><span class="xp"><i style="width:${meter}%"></i></span></div><small>${Math.round(meter)}%</small><small class="hud-title">${title}</small></div><div class="hud-pill is-gold"><span class="pill-ico">${ui.icon("coin")}</span><small>金币</small><b>${money(meta.cash)}</b><button type="button" data-action="tab" data-value="market" aria-label="前往市场">+</button></div><div class="hud-pill is-gem"><span class="pill-ico">${ui.icon("gem")}</span><small>钻石</small><b>${meta.reputation}</b><button type="button" data-action="tab" data-value="league" aria-label="查看联盟">+</button></div><div class="hud-energy"><div><small>行动力</small><b>${meta.energy} / 6</b></div><span class="energy-bar"><i style="width:${meta.energy/6*100}%"></i></span></div><button type="button" class="hud-icon" data-action="advance-day" aria-label="推进一天">${ui.icon("refresh")}</button><div class="hud-date">${ui.icon("calendar")}<b>${ops.date(meta.day)}</b></div><button type="button" class="hud-icon" data-action="tab" data-value="settings" aria-label="菜单">${ui.icon("menu")}</button></div>`;
 }
 
 function finishCreate() {
@@ -197,7 +199,7 @@ function packEntries() {
 function startPack(kind) {
   const entries = packEntries();
   const focus = kind === "create" ? state.setup.star : entries.reduce((top, entry) => entry.ovr >= top.ovr ? entry : top).id;
-  pack = {kind, phase: reduced.matches ? "done" : "shake", focus, entries, logo: state.team?.logo || state.setup.logo};
+  pack = {kind, phase: reduced.matches ? "done" : "shake", focus, entries, logo: state.team?.logo || state.setup.logo, cash: state.meta.cash, gems: state.meta.reputation};
   if (!reduced.matches) queuePack();
 }
 
@@ -270,12 +272,8 @@ function render(focus = false) {
 function draftScreen() {
   const current = prospects[state.selected];
   const scouted = state.scouted.includes(state.selected);
-  const cards = Object.entries(prospects).map(([id, p]) =>
-    `<button type="button" class="card" data-action="select" data-value="${id}" aria-pressed="${id === state.selected}" ${state.draft ? "disabled" : ""}>
-      ${photo(id)}<b>${window.skinName(id,p.name)}</b><small>${p.school} · ${p.pos}</small><small class="rating">即战力 ${p.ovr} · ${p.style}</small>
-    </button>`).join("");
+  const cards = Object.entries(prospects).map(([id, p]) => ui.collectibleCard({id, player:p, ovr:p.ovr, logo:state.team.logo, photo, action:"select", pressed:id===state.selected, disabled:Boolean(state.draft)})).join("");
   return `<section class="hero">
-    ${photo(state.team.star,"hero-photo")}
     <div class="hero-body"><span class="eyebrow">2025 DRAFT NIGHT</span><h1>选秀之夜</h1><p>达拉斯已选中库珀·弗拉格。现在，轮到你用榜眼签为${teamName()}挑一位新秀。</p><span class="pick">首轮第 2 顺位 · ${teamName()}</span></div>
   </section>
   <div class="panel-head"><h2>新秀看板</h2><span class="muted">球探名额 ${2-state.scouted.length} / 2</span></div>
@@ -491,8 +489,14 @@ const actions = {
     else startPack("create");
   },
   "pack-demo"() { if (!pack) startPack("demo"); },
+  "pack-again"() {
+    if (!pack || pack.kind==="create") return;
+    clearTimeout(packTimer);
+    startPack("demo");
+  },
   "pack-skip"() {
     if (!pack) return;
+    if (pack.phase==="done") { actions["pack-close"](); return; }
     clearTimeout(packTimer);
     pack.phase="done";
   },
