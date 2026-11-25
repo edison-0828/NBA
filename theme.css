@@ -393,6 +393,26 @@ dialog::backdrop{background:rgba(0,0,0,.62)}
 .card-back{display:block;width:100%;height:100%;border-radius:16px;position:relative;border:3px solid #e6c36a;background:radial-gradient(circle at 50% 42%,rgba(230,190,90,.35),transparent 36%),linear-gradient(180deg,#1a2b4d,#0c1730);box-shadow:inset 0 0 0 5px rgba(26,48,92,.9)}
 .card-back-ring{position:absolute;inset:24%;border:2px solid rgba(240,200,100,.85);border-radius:12px;transform:rotate(45deg)}
 .card-back-gem{position:absolute;left:50%;top:50%;width:22%;height:22%;transform:translate(-50%,-50%) rotate(45deg);background:linear-gradient(135deg,#fff1c4,#e0a322)}
+#game:has(.schedule-page){display:flex;flex-direction:column;overflow:hidden}
+#game:has(.schedule-page) .management-heading{flex:none;padding:2px 8px 0}
+.schedule-page{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding:4px 8px 6px}
+.schedule-page .season-summary{margin:0;padding:6px 8px}
+.schedule-page .season-summary b{font-size:clamp(18px,4.4vh,26px)}
+.schedule-table{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:14px;background:rgba(8,8,12,.74)}
+.schedule-head,.schedule-row{display:grid;grid-template-columns:92px 58px 42px minmax(0,1fr) 92px 96px;align-items:center;gap:6px;padding:0 8px}
+.schedule-head{min-height:32px;font-size:12px;color:var(--gold);background:#16130f;border-bottom:1px solid var(--line)}
+.schedule-body{overflow:auto;min-height:0}
+.schedule-month{padding:8px 10px 2px;font-size:12px;color:var(--gold);letter-spacing:.08em}
+.schedule-row{min-height:48px;border-top:1px solid rgba(255,255,255,.06)}
+.schedule-row.is-next{background:color-mix(in srgb,var(--club-accent) 32%,transparent)}
+.schedule-row.is-played{opacity:.62}
+.schedule-row .opp{display:flex;align-items:center;gap:6px;min-width:0}
+.schedule-row .opp b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.schedule-row .fixture-logo{width:32px;height:32px;flex:0 0 32px}
+.schedule-score{white-space:nowrap}
+.schedule-row.is-win .schedule-score{color:#7dffa0}
+.schedule-row.is-loss .schedule-score{color:#ff8d8d}
+.schedule-act .btn{min-height:44px;padding:0 8px;font-size:13px;white-space:nowrap}
 .nba-logo{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;overflow:hidden}
 .nba-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .nba-logo.hud-crest{width:clamp(28px,8vh,40px);height:clamp(28px,8vh,40px);flex-basis:clamp(28px,8vh,40px)}
