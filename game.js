@@ -138,10 +138,11 @@ function photo(id, className = "photo") {
   const p = players[id];
   const initials = p.en.split(" ").map(part => part[0]).slice(0,2).join("");
   const hasPortrait = ops.portraitIds.has(id);
-  const path = p.photo && (!hasPortrait || !["card-portrait","mini-photo"].includes(className))
-    ? `assets/${id}.jpg`
-    : hasPortrait ? `assets/portraits/${id}.webp` : "";
-  const img = path ? `<img src="${path}" alt="" ${["photo","card-portrait"].includes(className) ? 'loading="lazy"' : ""}>` : "";
+  const onCard = className === "card-portrait";
+  const useStill = Boolean(p.photo) && (!hasPortrait || !["card-portrait","mini-photo"].includes(className));
+  const path = useStill ? `assets/${id}.jpg` : hasPortrait ? `assets/portraits/${id}.webp` : "";
+  const frame = onCard && path ? (useStill ? "is-action" : "is-headshot") : "";
+  const img = path ? `<img${frame ? ` class="${frame}"` : ""} src="${path}" alt="" ${["photo","card-portrait"].includes(className) ? 'loading="lazy"' : ""}>` : "";
   return `<span class="${className}" aria-hidden="true"><span class="initial">${initials}</span>${img}</span>`;
 }
 
