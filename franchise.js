@@ -25,6 +25,23 @@ const teamIdentities={
  tor:["多伦多","#ff617c","TOR"],utah:["犹他","#e2df6e","UTA"],wsh:["华盛顿","#f27283","WAS"]
 };
 const teamCity=id=>teamIdentities[id]?.[0]||"";
+const teamAccent=id=>teamIdentities[id]?.[1]||"";
+function rarityOf(ovr){
+ const rating=Number(ovr);
+ if(rating>=90) return "legend";
+ if(rating>=83) return "gold";
+ if(rating>=76) return "silver";
+ return "bronze";
+}
+function collectibleCard({id,player,ovr,logo,photo,action,pressed=null,asStar=false,deal=0}){
+ const tier=rarityOf(ovr);
+ const shine=tier==="legend"?'<span class="card-shine" aria-hidden="true"></span>':"";
+ const number=player.num==null?"":`<span class="card-num">#${player.num}</span> `;
+ const attrs=[`data-action="${action}"`,`data-value="${id}"`,`data-rarity="${tier}"`];
+ if(pressed!==null) attrs.push(`aria-pressed="${pressed}"`);
+ if(asStar) attrs.push(`style="--deal:${deal}"`);
+ return `<button type="button" class="roster-cover rarity-${tier}${asStar?" star-card":""}" ${attrs.join(" ")}>${photo(id,"card-portrait")}${mark(logo,"card-team-logo")}<span class="card-ovr">${ovr}<small>${escape(player.pos)}</small></span>${shine}<span class="card-namebar"><b title="${escape(player.name)}">${escape(player.name)}</b><small>${number}${escape(player.style)}</small></span></button>`;
+}
 function openingLogoPicker({logo,region="all",query=""},button){
  const selected=teamCity(logo);
  const choices=Object.entries(teamIdentities).map(([id,[city,color,code]])=>{
@@ -62,7 +79,9 @@ function wizard(state,button,photo){
  if(pickingLogo){
   content=openingLogoPicker(state.setup,button);
  }else{
-  content=`<div class="create-grid star-grid">${Object.entries(stars).map(([id,p])=>`<button type="button" class="card star-choice" data-action="choose-star" data-value="${id}" aria-pressed="${star===id}">${photo(id,"mini-photo")}<span><b>${p.name}</b><small>${p.pos} · ${p.style}</small></span><strong>${p.ovr}</strong></button>`).join("")}</div><div class="actions">${button("上一步","setup-back")}${button("执教","create-team",{primary:true,disabled:!star})}</div>`;
+  const dealIn=!state.setup.dealt;
+  const cards=Object.entries(stars).map(([id,p],index)=>collectibleCard({id,player:p,ovr:p.ovr,logo,photo,action:"choose-star",pressed:star===id,asStar:true,deal:index})).join("");
+  content=`<div class="create-grid star-grid${dealIn?" is-dealing":""}">${cards}</div><div class="actions">${button("上一步","setup-back")}${button("执教","create-team",{primary:true,disabled:!star})}</div>`;
  }
  return `<section class="setup-page opening-page"><header class="opening-hero"><div class="opening-brand">篮球总经理</div><p>从建队开始，执掌你的球队。</p></header><div class="setup-steps">${labels.map((label,index)=>`<span ${step===index+1?'aria-current="step"':""} class="${step===index+1?"current":""}">${index+1} ${label}</span>`).join("")}</div><section class="create-panel ${pickingLogo?"opening-picker":""}"><h1>${pickingLogo?"选择球队队标":"选择当家球星"}</h1><p class="muted">${pickingLogo?"30 支球队队标":teamCity(logo)+" · 选择一名球星加入首发"}</p>${content}</section></section>`;
 }
@@ -159,8 +178,9 @@ function dashboard(state,{button,photo,roster,players,money,progress,prospects,r
   const starters=Object.values(state.starters);
   const ids=[...starters,...roster().filter(id=>!starters.includes(id))];
   content=`<section class="roster-panel"><div class="panel-head"><h2>阵容 · ${ids.length} 人</h2><span class="muted">首发 ${starters.length} 人</span></div><div class="roster-cards">${ids.map(id=>{
-   const p=players[id], salary=id==="paul"?state.veteran.offer.amount:p.salary;
-   return `<article class="roster-card"><button type="button" class="roster-cover" data-action="player-detail" data-value="${id}">${photo(id,"card-portrait")}${mark(team.logo,"card-team-logo")}<span class="card-ovr">${rating(id)}<small>${p.pos}</small></span><span class="card-role">${id===team.star?"当家球星":starters.includes(id)?"首发":"替补"}</span><b>${p.name}</b></button><div class="roster-meta"><small>${p.style} · ${money(salary)} / 年</small>${!starters.includes(id)?button("设为首发","dashboard-start",{value:id}):""}</div></article>`;
+   const p=players[id], salary=id==="paul"?state.veteran.offer.amount:p.salary, ovr=rating(id);
+   const role=id===team.star?"当家球星":starters.includes(id)?"首发":"";
+   return `<article class="roster-card">${collectibleCard({id,player:p,ovr,logo:team.logo,photo,action:"player-detail"})}<div class="roster-actions"><small>${money(salary)} / 年</small>${role?`<span class="roster-role">${role}</span>`:button("设为首发","dashboard-start",{value:id})}</div></article>`;
   }).join("")}</div></section>`;
  }else if(view==="market"){
   content=marketPage(state,{button,photo,prospects});
@@ -173,5 +193,5 @@ function dashboard(state,{button,photo,roster,players,money,progress,prospects,r
  }
  return `<div class="management-heading"><h1>${tabs[view][0]}</h1></div>${content}`;
 }
-window.FranchiseUI={stars,marks,tabs,escape,mark,wizard,navigation,dashboard,marketDetail,playerDetail,filterOpeningLogos,teamCity};
+window.FranchiseUI={stars,marks,tabs,escape,mark,wizard,navigation,dashboard,marketDetail,playerDetail,filterOpeningLogos,teamCity,teamAccent};
 })();

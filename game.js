@@ -125,8 +125,11 @@ function readSave() {
 }
 
 function save() {
+  const dealt=Boolean(state.setup&&state.setup.dealt);
+  if(dealt) delete state.setup.dealt;
   try { localStorage.setItem(key, JSON.stringify(state)); }
   catch { announce("此浏览器无法保存进度，本次仍可继续试玩。"); }
+  if(dealt) state.setup.dealt=true;
 }
 
 function announce(message) { toast.textContent = message; }
@@ -174,6 +177,10 @@ function advanceDay() {
 }
 
 function render(focus = false) {
+  const clubId=state.team?.logo||state.setup.logo;
+  const accent=clubId?ui.teamAccent(clubId):"";
+  if(accent) document.body.style.setProperty("--club-accent",accent);
+  else document.body.style.removeProperty("--club-accent");
   document.body.classList.toggle("opening-mode",!state.team);
   document.body.classList.toggle("management-mode",Boolean(state.team));
   const onFlow = Boolean(state.team && state.flow);
@@ -183,6 +190,7 @@ function render(focus = false) {
   mainNav.innerHTML = state.team ? ui.navigation(state.view, onFlow) : "";
   steps.innerHTML = stages.map((label, index) => `<span class="step ${index === state.phase ? "current" : index < state.phase ? "done" : ""}" ${index === state.phase ? 'aria-current="step"' : ""}><b>${String(index+1).padStart(2,"0")}</b>${label}</span>`).join("");
   game.innerHTML = !state.team ? ui.wizard(state,button,photo) : onFlow ? [draftScreen, contractScreen, lineupScreen, gameScreen][state.phase]() : ui.dashboard(state,{button,photo,roster,players,money,progress:progression,prospects,rating,practicePlayer,tactics});
+  if(!state.team && state.setup.step===2) state.setup.dealt=true;
   if (!state.team) ui.filterOpeningLogos(game,state.setup);
   if (focus) {
     game.focus();
@@ -405,7 +413,7 @@ const actions = {
   "choose-logo"(id) { if (Object.hasOwn(ui.marks,id)) state.setup.logo=id; },
   "opening-region"(id) { if (["all","E","W"].includes(id)) state.setup.region=id; },
   "choose-star"(id) { if (Object.hasOwn(ui.stars,id)) state.setup.star=id; },
-  "setup-back"() { state.setup.step=1; },
+  "setup-back"() { state.setup.step=1; state.setup.dealt=false; },
   "setup-next"() { if (state.setup.logo) state.setup.step=2; },
   "create-team"() {
     const {logo,star}=state.setup;
@@ -562,6 +570,22 @@ game.addEventListener("change",event=>{
   document.querySelector("#ledger").innerHTML=ledger();
   save();
 });
+
+function liftCard(event, on) {
+  const card = event.target.closest?.(".roster-cover");
+  if (!card) return;
+  if (on) {
+    if (reduced.matches) return;
+    card.classList.add("is-lifted");
+    return;
+  }
+  if (event.relatedTarget && card.contains(event.relatedTarget)) return;
+  card.classList.remove("is-lifted");
+}
+game.addEventListener("pointerover", event => liftCard(event, true));
+game.addEventListener("pointerout", event => liftCard(event, false));
+game.addEventListener("pointercancel", event => liftCard(event, false));
+game.addEventListener("pointerup", event => { if (event.pointerType === "touch") liftCard(event, false); });
 
 game.addEventListener("load",event=>{
   if (event.target instanceof HTMLImageElement) event.target.classList.add("is-loaded");
