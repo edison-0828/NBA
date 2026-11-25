@@ -173,11 +173,13 @@ function kickoffWhen(day){
 function lobbyPage(state,{photo,players,rating,progress}){
  const order=["PG","SG","SF","PF","C"];
  const logo=state.team.logo;
- const cards=order.map((pos,index)=>{
-  const id=state.starters[pos];
-  if(!id||!players[id]) return "";
-  const player=players[id];
-  return `<div class="lobby-slot" style="--slot:${index}">${collectibleCard({id,player,ovr:rating(id),logo,photo,action:"player-detail"})}</div>`;
+ const ranked=order.map(pos=>({pos,id:state.starters[pos]})).filter(item=>item.id&&players[item.id]).sort((a,b)=>rating(b.id)-rating(a.id)||order.indexOf(a.pos)-order.indexOf(b.pos));
+ const placed=Array(ranked.length);
+ const visual=[2,1,3,0,4];
+ ranked.forEach((item,rank)=>{ placed[visual[rank]]=item; });
+ const cards=placed.filter(Boolean).map(item=>{
+  const player=players[item.id];
+  return `<div class="lobby-slot">${collectibleCard({id:item.id,player,ovr:rating(item.id),logo,photo,action:"player-detail"})}</div>`;
  }).join("");
  const [wins,losses]=ops.ownRecord(state);
  const next=ops.schedule(state).find(game=>!game.result);
