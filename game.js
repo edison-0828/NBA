@@ -7,7 +7,7 @@ const prospects = {
   ace: {name:"埃斯·贝利", en:"Ace Bailey", pos:"SF", num:19, ovr:77, range:[84,95], school:"罗格斯大学", style:"锋线投射", salary:12.4, report:"身高和出手点能帮他在侧翼创造投篮机会，有潜力成为第二得分点。"}
 };
 
-const players = {
+let players = {
   fox: {name:"达龙·福克斯", en:"De’Aaron Fox", pos:"PG", num:4, ovr:84, style:"突破组织", salary:11, next:0, deal:"剩余 1 年"},
   castle: {name:"斯蒂芬·卡斯尔", en:"Stephon Castle", pos:"SG", num:5, ovr:81, style:"外线防守", salary:9.6, next:10.1, deal:"新秀合同"},
   vassell: {name:"德文·瓦塞尔", en:"Devin Vassell", pos:"SF", num:24, ovr:82, style:"接球投射", salary:11, next:11, deal:"长期合同"},
@@ -52,6 +52,14 @@ const rotationPlayers = [
 for (const [id,name,en,pos,num,ovr,style,salary,next] of rotationPlayers) {
   players[id]={name,en,pos,num,ovr,style,salary,next,deal:next ? "剩余 2 年" : "剩余 1 年"};
 }
+players = new Proxy(players, {
+  get(target, prop, receiver) {
+    const value = Reflect.get(target, prop, receiver);
+    const name = typeof prop === "string" ? window.PlayerSkins?.[prop]?.name : "";
+    if (value && typeof value === "object" && name) return {...value, name};
+    return value;
+  }
+});
 
 function allocateRoster(starId) {
   const starPosition = players[starId].pos;
@@ -91,12 +99,16 @@ const initial = () => ({
 const game = document.querySelector("#game");
 const steps = document.querySelector("#steps");
 const mainNav = document.querySelector("#franchise-nav");
-const teamBadge = document.querySelector("#team-badge");
+const topBar = document.querySelector(".top");
+const packLayer = document.querySelector("#pack-layer");
+let pack = null;
+let packTimer = null;
 const toast = document.querySelector("#status");
 const dialog = document.querySelector("#dialog");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 let replay = null;
 let state = readSave();
+if (state.team && !state.flow) state.view = "office";
 if (state.result && state.meta.seasonOrigin===null) {
   state.meta.seasonOrigin=state.meta.day;
   state.meta.seasonClub=state.team.logo;
@@ -125,20 +137,29 @@ function readSave() {
 }
 
 function save() {
+  const dealt=Boolean(state.setup&&state.setup.dealt);
+  if(dealt) delete state.setup.dealt;
   try { localStorage.setItem(key, JSON.stringify(state)); }
   catch { announce("此浏览器无法保存进度，本次仍可继续试玩。"); }
+  if(dealt) state.setup.dealt=true;
 }
 
 function announce(message) { toast.textContent = message; }
 
 function photo(id, className = "photo") {
   const p = players[id];
-  const initials = p.en.split(" ").map(part => part[0]).slice(0,2).join("");
+  const skin = window.PlayerSkins?.[id] || {};
+  const initials = (p.en || p.name || "?").split(" ").map(part => part[0]).slice(0,2).join("");
   const hasPortrait = ops.portraitIds.has(id);
-  const path = p.photo && (!hasPortrait || !["card-portrait","mini-photo"].includes(className))
-    ? `assets/${id}.jpg`
-    : hasPortrait ? `assets/portraits/${id}.webp` : "";
-  const img = path ? `<img src="${path}" alt="" ${["photo","card-portrait"].includes(className) ? 'loading="lazy"' : ""}>` : "";
+  const onCard = className === "card-portrait";
+  let useStill = Boolean(p.photo) && (!hasPortrait || !["card-portrait","mini-photo"].includes(className));
+  let path = useStill ? `assets/${id}.jpg` : hasPortrait ? `assets/portraits/${id}.webp` : "";
+  if (skin.portrait) {
+    path = skin.portrait;
+    useStill = skin.fit === "action";
+  }
+  const frame = onCard && path ? (useStill ? "is-action" : "is-headshot") : "";
+  const img = path ? `<img${frame ? ` class="${frame}"` : ""} src="${path}" alt="" ${["photo","card-portrait"].includes(className) ? 'loading="lazy"' : ""}>` : "";
   return `<span class="${className}" aria-hidden="true"><span class="initial">${initials}</span>${img}</span>`;
 }
 
@@ -153,6 +174,126 @@ function progression() {
 }
 
 function teamName() { return ui.escape(state.team.name); }
+
+function lobbyBar() {
+  const meta = state.meta;
+  const level = 1 + Math.floor((meta.reputation || 0) / 4);
+  const title = meta.reputation >= 20 ? "资深总经理" : meta.reputation >= 8 ? "球队经理" : "新任总经理";
+  const rest = meta.reputation % 4;
+  const meter = meta.reputation === 0 ? 8 : rest === 0 ? 100 : rest / 4 * 100;
+  const nickname = ui.marks[state.team.logo]?.name || "";
+  const conf = ui.marks[state.team.logo]?.conference === "W" ? "西部" : "东部";
+  const phaseLabel = state.result ? "常规赛进行中" : "休赛期 · 新赛季";
+  return `<div class="hud"><div class="hud-cluster"><div class="hud-club">${ui.mark(state.team.logo,"hud-crest")}<div><b>${teamName()}</b><small>${nickname}王朝</small></div></div><div class="hud-level">${ui.mark(state.team.logo,"hud-level-crest")}<div><b>经理 Lv.${level}</b><span class="xp"><i style="width:${meter}%"></i></span></div><small>${Math.round(meter)}%</small><small class="hud-title">${title}</small></div><div class="hud-pill is-gold"><span class="pill-ico">${ui.icon("coin")}</span><small>金币</small><b>${money(meta.cash)}</b><button type="button" data-action="tab" data-value="market" aria-label="前往市场">+</button></div><div class="hud-pill is-gem"><span class="pill-ico">${ui.icon("gem")}</span><small>钻石</small><b>${meta.reputation}</b><button type="button" data-action="tab" data-value="league" aria-label="查看联盟">+</button></div><div class="hud-energy"><div><small>行动力</small><b>${meta.energy} / 6</b></div><span class="energy-bar"><i style="width:${meta.energy/6*100}%"></i></span></div></div><div class="hud-stage"><small>2025-26</small><b>${conf} · ${phaseLabel}</b></div><div class="hud-cluster hud-cluster-end"><button type="button" class="hud-icon" data-action="advance-day" aria-label="推进一天">${ui.icon("refresh")}</button><div class="hud-date">${ui.icon("calendar")}<b>${ops.date(meta.day)}</b></div><button type="button" class="hud-icon" data-action="tab" data-value="settings" aria-label="菜单">${ui.icon("menu")}</button></div></div>`;
+}
+
+function finishCreate() {
+  const {logo, star} = state.setup;
+  if (!logo || !star || state.team) return;
+  state.team = {name: ui.teamCity(logo), logo, star, cityNamed: true};
+  Object.assign(state, allocateRoster(star));
+  state.view = "office";
+}
+
+function packEntries() {
+  return Object.entries(ui.stars).map(([id, player]) => ({id, player, ovr: player.ovr}));
+}
+
+let packToken = 0;
+let packAnims = [];
+function portraitSrc(id) {
+  const skin = window.PlayerSkins?.[id]?.portrait;
+  if (skin) return skin;
+  const person = players[id];
+  if (!person) return "";
+  if (person.photo && !ops.portraitIds.has(id)) return `assets/${id}.jpg`;
+  if (ops.portraitIds.has(id)) return `assets/portraits/${id}.webp`;
+  return person.photo ? `assets/${id}.jpg` : "";
+}
+function preloadPack(entries) {
+  return Promise.all(entries.map(entry => {
+    const src = portraitSrc(entry.id);
+    if (!src) return Promise.resolve();
+    const img = new Image();
+    img.src = src;
+    const ready = img.decode ? img.decode().catch(() => {}) : Promise.resolve();
+    return Promise.race([ready, new Promise(resolve => setTimeout(resolve, 350))]);
+  }));
+}
+function stopPackMotion() {
+  packToken++;
+  clearTimeout(packTimer);
+  packAnims.forEach(anim => anim.cancel());
+  packAnims = [];
+}
+function playPack() {
+  const token = ++packToken;
+  const root = packLayer.querySelector(".pack-stage");
+  if (!root || !pack || pack.phase !== "play") return;
+  const stack = root.querySelector(".pack-stack");
+  const beam = root.querySelector(".pack-beam");
+  const cards = [...root.querySelectorAll(".flip-card")];
+  const actions = root.querySelector(".pack-actions");
+  const focus = root.querySelector(".flip-card.is-focus");
+  const track = anim => { if (anim) packAnims.push(anim); };
+  const spring = "cubic-bezier(.16,1,.3,1)";
+  if (actions) actions.style.pointerEvents = "none";
+  cards.forEach(card => { card.style.willChange = "transform, opacity"; });
+  track(stack?.animate([
+    {transform:"translate3d(0,0,0) rotate(0deg)"},
+    {transform:"translate3d(-7px,0,0) rotate(-2.5deg)", offset:.22},
+    {transform:"translate3d(7px,0,0) rotate(2.5deg)", offset:.48},
+    {transform:"translate3d(-4px,0,0) rotate(-1.4deg)", offset:.72},
+    {transform:"translate3d(0,-8px,0) rotate(0deg)"}
+  ], {duration:680, easing:"ease-in-out", fill:"forwards"}));
+  track(beam?.animate([
+    {opacity:0, transform:"scaleY(.25)"},
+    {opacity:.95, transform:"scaleY(1)"}
+  ], {duration:360, delay:540, easing:"cubic-bezier(.2,.8,.2,1)", fill:"forwards"}));
+  track(stack?.animate([
+    {opacity:1, offset:0},
+    {opacity:1, offset:.8},
+    {opacity:0}
+  ], {duration:980, easing:"linear", fill:"forwards"}));
+  cards.forEach((card, index) => {
+    const shift = index - (cards.length - 1) / 2;
+    track(card.animate([
+      {opacity:0, transform:"translate3d(0,16px,0) rotate(0deg) scale(.9)"},
+      {opacity:1, transform:`translate3d(${shift * 4}px,0,0) rotate(${shift * 8}deg) scale(1)`}
+    ], {duration:500, delay:820 + index * 60, easing:spring, fill:"forwards"}));
+    const inner = card.querySelector(".flip-inner");
+    if (inner) inner.style.willChange = "transform";
+    track(inner?.animate([
+      {transform:"rotateY(0deg)"},
+      {transform:"rotateY(180deg)"}
+    ], {duration:460, delay:1320 + index * 75, easing:"cubic-bezier(.45,0,.2,1)", fill:"forwards"}));
+  });
+  if (focus) {
+    const index = cards.indexOf(focus);
+    const shift = index - (cards.length - 1) / 2;
+    track(focus.animate([
+      {transform:`translate3d(${shift * 4}px,0,0) rotate(${shift * 8}deg) scale(1)`},
+      {transform:"translate3d(0,-6px,0) rotate(0deg) scale(1.1)"}
+    ], {duration:420, delay:1320 + cards.length * 75 + 40, easing:spring, fill:"forwards"}));
+  }
+  const finishAt = 1320 + cards.length * 75 + 480;
+  track(actions?.animate([{opacity:0},{opacity:1}], {duration:260, delay:finishAt, easing:"ease-out", fill:"forwards"}));
+  packTimer = setTimeout(() => {
+    if (token !== packToken || !pack) return;
+    if (actions) actions.style.pointerEvents = "";
+    cards.forEach(card => { card.style.willChange = ""; });
+    root.querySelectorAll(".flip-inner").forEach(node => { node.style.willChange = ""; });
+    pack.phase = "done";
+  }, finishAt + 280);
+  preloadPack(pack.entries);
+}
+function startPack(kind) {
+  const entries = packEntries();
+  const focus = kind === "create" ? state.setup.star : entries.reduce((top, entry) => entry.ovr >= top.ovr ? entry : top).id;
+  stopPackMotion();
+  pack = {kind, phase: reduced.matches ? "done" : "play", focus, entries, logo: state.team?.logo || state.setup.logo, cash: state.meta.cash, gems: state.meta.reputation};
+  render();
+}
 
 function rating(id) {
   const cap=id===state.team.star?99:84;
@@ -174,16 +315,34 @@ function advanceDay() {
 }
 
 function render(focus = false) {
+  const clubId=state.team?.logo||state.setup.logo;
+  const accent=clubId?ui.teamAccent(clubId):"";
+  if(accent) document.body.style.setProperty("--club-accent",accent);
+  else document.body.style.removeProperty("--club-accent");
   document.body.classList.toggle("opening-mode",!state.team);
   document.body.classList.toggle("management-mode",Boolean(state.team));
   const onFlow = Boolean(state.team && state.flow);
-  mainNav.hidden = !state.team;
+  mainNav.hidden = !state.team || Boolean(pack);
   steps.hidden = !onFlow;
-  teamBadge.innerHTML = state.team ? ui.mark(state.team.logo) + '<span><b>' + teamName() + '</b><small>我的球队</small></span>' : "";
+  topBar.innerHTML = state.team ? lobbyBar() : `<div class="team-badge" id="team-badge"></div><span class="management-label">篮球总经理</span>`;
   mainNav.innerHTML = state.team ? ui.navigation(state.view, onFlow) : "";
   steps.innerHTML = stages.map((label, index) => `<span class="step ${index === state.phase ? "current" : index < state.phase ? "done" : ""}" ${index === state.phase ? 'aria-current="step"' : ""}><b>${String(index+1).padStart(2,"0")}</b>${label}</span>`).join("");
   game.innerHTML = !state.team ? ui.wizard(state,button,photo) : onFlow ? [draftScreen, contractScreen, lineupScreen, gameScreen][state.phase]() : ui.dashboard(state,{button,photo,roster,players,money,progress:progression,prospects,rating,practicePlayer,tactics});
+  if(!state.team && state.setup.step===2) state.setup.dealt=true;
   if (!state.team) ui.filterOpeningLogos(game,state.setup);
+  if (pack) {
+    packLayer.hidden = false;
+    const stamp = `${pack.kind}:${pack.phase}:${pack.focus}`;
+    if (packLayer.dataset.stamp !== stamp) {
+      packLayer.dataset.stamp = stamp;
+      packLayer.innerHTML = ui.packMarkup(pack, {photo, button});
+      if (pack.phase === "play") requestAnimationFrame(playPack);
+    }
+  } else {
+    packLayer.hidden = true;
+    packLayer.innerHTML = "";
+    delete packLayer.dataset.stamp;
+  }
   if (focus) {
     game.focus();
     window.scrollTo(0, 0);
@@ -193,18 +352,14 @@ function render(focus = false) {
 function draftScreen() {
   const current = prospects[state.selected];
   const scouted = state.scouted.includes(state.selected);
-  const cards = Object.entries(prospects).map(([id, p]) =>
-    `<button type="button" class="card" data-action="select" data-value="${id}" aria-pressed="${id === state.selected}" ${state.draft ? "disabled" : ""}>
-      ${photo(id)}<b>${p.name}</b><small>${p.school} · ${p.pos}</small><small class="rating">即战力 ${p.ovr} · ${p.style}</small>
-    </button>`).join("");
+  const cards = Object.entries(prospects).map(([id, p]) => ui.collectibleCard({id, player:p, ovr:p.ovr, logo:state.team.logo, photo, action:"select", pressed:id===state.selected, disabled:Boolean(state.draft)})).join("");
   return `<section class="hero">
-    ${photo(state.team.star,"hero-photo")}
     <div class="hero-body"><span class="eyebrow">2025 DRAFT NIGHT</span><h1>选秀之夜</h1><p>达拉斯已选中库珀·弗拉格。现在，轮到你用榜眼签为${teamName()}挑一位新秀。</p><span class="pick">首轮第 2 顺位 · ${teamName()}</span></div>
   </section>
   <div class="panel-head"><h2>新秀看板</h2><span class="muted">球探名额 ${2-state.scouted.length} / 2</span></div>
   <div class="cards">${cards}</div>
   <section class="report ${state.draft ? "reveal" : ""}">
-    <h3>${state.draft ? teamName() + "选中 " : ""}${current.name} ${state.draft ? '<span class="stamp">榜眼</span>' : ""}</h3>
+    <h3>${state.draft ? teamName() + "选中 " : ""}${window.skinName(state.selected,current.name)} ${state.draft ? '<span class="stamp">榜眼</span>' : ""}</h3>
     <p class="muted">${current.en} · ${current.style} · 潜力 ${scouted ? current.range.join("–") : "待球探评估"}</p>
     <p>${scouted ? current.report : "使用球探名额查看潜力区间和战术适配。"}</p>
   </section>
@@ -251,7 +406,7 @@ function contractScreen() {
   const stopped = Boolean(state.veteran);
   const years = state.offer.years;
   return `<div class="intro"><span class="eyebrow">FRONT OFFICE</span><h1>合同中心</h1><p>先锁定榜眼，再决定是否留下克里斯·保罗。</p></div>
-  <section class="panel"><h3>${rookie.name} · 榜眼合同</h3><p class="muted">首年 ${money(rookie.salary)} · 前两年保障 · 后两年球队选项</p>
+  <section class="panel"><h3>${window.skinName(state.draft,rookie.name)} · 榜眼合同</h3><p class="muted">首年 ${money(rookie.salary)} · 前两年保障 · 后两年球队选项</p>
   <div class="actions">${state.rookieSigned ? '<span class="stamp">已签约</span>' : button("签署新秀合同","sign-rookie",{primary:true})}</div></section>
   <section class="panel"><h3>克里斯·保罗 · ${stopped ? (state.veteran.kind === "signed" ? "续约完成" : "进入自由市场") : "续约谈判"}</h3>
   <p class="muted">${stopped ? "工资表已计入你的决定。" : "球员优先考虑保障年限，也看重能自己决定去留的选项。"}</p>
@@ -405,14 +560,33 @@ const actions = {
   "choose-logo"(id) { if (Object.hasOwn(ui.marks,id)) state.setup.logo=id; },
   "opening-region"(id) { if (["all","E","W"].includes(id)) state.setup.region=id; },
   "choose-star"(id) { if (Object.hasOwn(ui.stars,id)) state.setup.star=id; },
-  "setup-back"() { state.setup.step=1; },
+  "setup-back"() { state.setup.step=1; state.setup.dealt=false; },
   "setup-next"() { if (state.setup.logo) state.setup.step=2; },
   "create-team"() {
     const {logo,star}=state.setup;
-    if (!logo || !star || state.team) return;
-    state.team={name:ui.teamCity(logo),logo,star,cityNamed:true};
-    Object.assign(state,allocateRoster(star));
-    state.view="office";
+    if (!logo || !star || state.team || pack) return;
+    if (reduced.matches) finishCreate();
+    else startPack("create");
+  },
+  "pack-demo"() { if (!pack) startPack("demo"); },
+  "pack-again"() {
+    if (!pack || pack.kind==="create") return;
+    stopPackMotion();
+    startPack("demo");
+  },
+  "pack-skip"() {
+    if (!pack) return;
+    if (pack.phase==="done") { actions["pack-close"](); return; }
+    stopPackMotion();
+    pack.phase="done";
+    render();
+  },
+  "pack-close"() {
+    if (!pack) return;
+    const kind=pack.kind;
+    stopPackMotion();
+    pack=null;
+    if (kind==="create") finishCreate();
   },
   tab(id) {
     if (!state.team || !Object.hasOwn(ui.tabs,id)) return;
@@ -479,7 +653,7 @@ document.addEventListener("click",event=>{
         state.meta.reputation+=2;
         save();
         render();
-        announce(p.name+"已签约");
+        announce(window.skinName(value,p.name)+"已签约");
       }
     }
     const detail=action==="team-detail"?ops.teamDetail(state,value,context):action==="player-detail"?ui.playerDetail(state,value,context):ui.marketDetail(state,value,context);
@@ -563,13 +737,48 @@ game.addEventListener("change",event=>{
   save();
 });
 
-game.addEventListener("load",event=>{
+function liftCard(event, on) {
+  const card = event.target.closest?.(".roster-cover");
+  if (!card) return;
+  if (on) {
+    if (reduced.matches) return;
+    card.classList.add("is-lifted");
+    return;
+  }
+  if (event.relatedTarget && card.contains(event.relatedTarget)) return;
+  card.classList.remove("is-lifted");
+}
+function trackHolo(event) {
+  const card = event.target.closest?.(".roster-cover.rarity-holo");
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  card.style.setProperty("--hx", `${((event.clientX - rect.left) / rect.width * 100).toFixed(1)}%`);
+  card.style.setProperty("--hy", `${((event.clientY - rect.top) / rect.height * 100).toFixed(1)}%`);
+}
+game.addEventListener("pointermove", trackHolo);
+packLayer.addEventListener("pointermove", trackHolo);
+game.addEventListener("pointerover", event => liftCard(event, true));
+game.addEventListener("pointerout", event => liftCard(event, false));
+game.addEventListener("pointercancel", event => liftCard(event, false));
+game.addEventListener("pointerup", event => { if (event.pointerType === "touch") liftCard(event, false); });
+
+document.addEventListener("load",event=>{
   if (event.target instanceof HTMLImageElement) event.target.classList.add("is-loaded");
 },true);
 
-game.addEventListener("error",event=>{
+document.addEventListener("error",event=>{
   if (event.target instanceof HTMLImageElement) event.target.hidden=true;
 },true);
 
+packLayer.addEventListener("click", event => {
+  if (!pack || pack.phase === "done" || event.target.closest("button")) return;
+  actions["pack-skip"]();
+});
+document.querySelector("#rotate-go")?.addEventListener("click", async () => {
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    if (screen.orientation?.lock) await screen.orientation.lock("landscape");
+  } catch {}
+});
 render();
 })();

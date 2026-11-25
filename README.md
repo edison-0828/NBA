@@ -30,3 +30,5 @@
 - 杰伦·布朗，All-Pro Reels，[照片](<https://commons.wikimedia.org/wiki/File:Jaylen_Brown_2022.jpg>)，[CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/)。
 - 阿德托昆博，All-Pro Reels，[照片](<https://commons.wikimedia.org/wiki/File:Giannis_Antetokounmpo_(51664127127)_(cropped).jpg>)，[CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/)。
 - 界面使用 CSS 裁切展示。建队球星照片已缩小，各照片保留各自许可。
+- `assets/skins/` 里的 34 张卡通头像是 AI 生成的，用来替换对应球员的官方照片。显示名是谐音中文名，数据在 `player-skins.js`。把文件顶部的 `USE_PLAYER_SKINS` 改成 `false` 即可回到原来的姓名和照片。
+- `assets/arena-night.jpg` 是 AI 生成的球馆背景，界面叠了球队主色光。

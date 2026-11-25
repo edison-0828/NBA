@@ -1,0 +1,9 @@
+{
+  "name": "篮球总经理",
+  "short_name": "篮球总经理",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#090d18",
+  "theme_color": "#090d18"
+}

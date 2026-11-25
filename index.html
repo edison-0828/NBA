@@ -2,14 +2,17 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="从选秀夜到揭幕战的篮球总经理模拟游戏">
 <title>选秀之夜 · 篮球总经理</title>
-<link rel="stylesheet" href="game.css">
-<link rel="stylesheet" href="opening.css">
-<link rel="stylesheet" href="management.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="theme.css">
 <script src="league-data.js" defer></script>
+<script src="player-skins.js" defer></script>
 <script src="operations.js" defer></script>
 <script src="franchise.js" defer></script>
 <script src="game.js" defer></script>
@@ -26,5 +29,13 @@
 </div>
 <div class="sr" id="status" aria-live="polite"></div>
 <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+<div id="pack-layer" hidden></div>
+<div id="rotate-lock" class="rotate-lock">
+  <div class="rotate-card">
+    <b>请横屏游戏</b>
+    <p>把手机横过来，五人首发和卡包才会排开。</p>
+    <button type="button" id="rotate-go">横屏开始</button>
+  </div>
+</div>
 </body>
 </html>
