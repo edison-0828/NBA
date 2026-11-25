@@ -9,7 +9,7 @@ const stars={
 };
 const ops=window.TeamOps;
 const marks=ops.byTeam;
-const tabs={office:["首页","⌂"],season:["赛季","▦"],players:["阵容","♙"],training:["训练","◇"],market:["市场","⇄"],packs:["开包","▣"],league:["联盟","◎"],settings:["设置","⚙"]};
+const tabs={office:["首页","⌂"],season:["日程","▦"],players:["阵容","♙"],training:["训练","◇"],market:["市场","⇄"],packs:["开包","▣"],league:["联盟","◎"],settings:["设置","⚙"]};
 const menu=["office","season","players","training","market","packs","league"];
 const escape=text=>String(text).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
 const mark=(id,extra="")=>`<span class="fr-mark nba-logo ${extra}" aria-hidden="true"><img src="assets/teams/${marks[id]?id:"sa"}.svg" alt=""></span>`;
@@ -188,14 +188,14 @@ function lobbyPage(state,{photo,players,rating,progress}){
  const standing=wins||losses?`${conf}`:`${conf} · 赛季未开始`;
  const current=progress();
  const ready=state.rookieSigned&&Boolean(state.veteran);
- const playLabel=state.result?"查看赛季":"开始比赛";
+ const playLabel=state.result?"查看日程":"开始比赛";
  const playAttrs=state.result
   ? `data-action="tab" data-value="season"`
   : `data-action="open-flow" data-value="${current}"${current>=2&&!ready?" disabled":""}`;
  const bars=[42,68,36,78,54,88,46,72,60].map(height=>`<i style="height:${height}%"></i>`).join("");
  const fixture=next?`<div class="vs-board"><div>${mark(logo)}<b>${escape(state.team.name)}</b></div><span class="vs-mark">VS</span><div>${mark(next.team.id)}<b>${teamCity(next.team.id)}${next.team.name}</b></div></div><p class="vs-meta">${next.day===null&&next.index===0?"揭幕战":kickoffWhen(next.day)}<span>|</span>${arenas[logo]||"主场球馆"}</p>`:`<p class="vs-meta">本赛季赛程已全部结束。</p>`;
  const ticker=newsLine(state,players);
- return `<div class="lobby"><div class="lobby-stage"><div class="lobby-arc">${cards}</div><div class="lobby-platform" aria-hidden="true"><span class="platform-ring"></span>${mark(logo,"platform-crest")}</div></div><aside class="lobby-side"><section class="side-card next-card"><h2>${icon("calendar")}下一场比赛</h2>${fixture}</section><button type="button" class="play-btn" ${playAttrs}>${icon("ball")}${playLabel}</button><section class="side-card record-card"><h2>本赛季战绩</h2><div class="record-body"><div><b>${wins} 胜 ${losses} 负</b><small>${standing}</small></div><div class="bars" aria-hidden="true">${bars}</div></div></section></aside><div class="lobby-news"><span class="news-tag">新闻</span>${mark(logo,"news-crest")}<div class="lobby-news-track"><span>${escape(ticker)}</span></div><button type="button" class="news-more" data-action="tab" data-value="season" aria-label="查看赛季">${icon("back")}</button></div></div>`;
+ return `<div class="lobby"><div class="lobby-stage"><div class="lobby-arc">${cards}</div><div class="lobby-platform" aria-hidden="true"><span class="platform-ring"></span>${mark(logo,"platform-crest")}</div></div><aside class="lobby-side"><section class="side-card next-card"><h2>${icon("calendar")}下一场比赛</h2>${fixture}</section><button type="button" class="play-btn" ${playAttrs}>${icon("ball")}${playLabel}</button><section class="side-card record-card"><h2>本赛季战绩</h2><div class="record-body"><div><b>${wins} 胜 ${losses} 负</b><small>${standing}</small></div><div class="bars" aria-hidden="true">${bars}</div></div></section></aside><div class="lobby-news"><span class="news-tag">新闻</span>${mark(logo,"news-crest")}<div class="lobby-news-track"><span>${escape(ticker)}</span></div><button type="button" class="news-more" data-action="tab" data-value="season" aria-label="查看日程">${icon("back")}</button></div></div>`;
 }
 function packPage(button){
  return `<section class="panel pack-hub"><div class="pack-hub-art" aria-hidden="true">${cardBack()}${cardBack()}${cardBack()}</div><div><h2>球星卡包</h2><p>卡背裂开，按最高稀有度打出光柱，扇开后翻面。全息或传奇会停在正中。</p><div class="actions">${button("开启演示包","pack-demo",{primary:true})}</div></div></section>`;
@@ -255,22 +255,38 @@ function playerDetail(state,id,{button,photo,players,money,roster,rating}){
  const p=players[id], salary=id==="paul"?state.veteran.offer.amount:p.salary;
  return {title:p.name,content:`<div class="market-detail-body">${photo(id,"mini-photo")}<div><strong>${p.en}</strong><p>${p.pos} · ${p.style} · 评分 ${rating(id)}</p></div></div><p>年薪 ${money(salary)} · ${p.years?p.years+" 年":p.deal||"新秀合同"}</p>${button("关闭","close")}`};
 }
-function fixtureLine(fixture,button){
- const {index,team,result,day}=fixture;
- const outcome=result?result.home>result.away?"胜":"负":"";
- const time=day!==null?ops.date(day):index===0?"揭幕战":"揭幕战后 "+fixture.offset+" 天";
- return `<div class="fixture-line"><span class="fixture-date">${time}</span>${mark(team.id,"fixture-logo")}<b>${teamCity(team.id)}${team.name}</b><span class="fixture-result${outcome==="胜"?" win-result":""}">${result?outcome+" "+result.home+" : "+result.away:"待赛"}</span>${index===0&&result?button("战报","open-flow",{value:"3"}):""}</div>`;
+function fixtureWhen(state,fixture){
+ const anchor=state.meta.seasonOrigin??state.meta.day??0;
+ const day=anchor+fixture.offset;
+ const date=new Date(Date.UTC(2025,5,25+day));
+ const weeks=["周日","周一","周二","周三","周四","周五","周六"];
+ const month=`${date.getUTCFullYear()}.${String(date.getUTCMonth()+1).padStart(2,"0")}`;
+ const label=`${String(date.getUTCMonth()+1).padStart(2,"0")}.${String(date.getUTCDate()).padStart(2,"0")} ${weeks[date.getUTCDay()]}`;
+ return {day,month,label};
+}
+function scheduleRow(state,fixture,button,progress){
+ const {index,team,result}=fixture;
+ const when=fixtureWhen(state,fixture);
+ const next=!result&&ops.schedule(state).find(game=>!game.result)?.index===index;
+ const win=result&&result.home>result.away;
+ const score=result?(win?"胜":"负")+` ${result.home}:${result.away}`:"待赛";
+ const round=index===0?"揭幕战":`第${index+1}轮`;
+ const action=next?button("开始比赛",index===0?"open-flow":"play-next",{value:index===0?String(progress()):"",primary:true}):"";
+ return `<div class="schedule-row${result?" is-played":""}${next?" is-next":""}${win?" is-win":""}${result&&!win?" is-loss":""}"><span>${when.label}</span><span>${round}</span><span>主</span><span class="opp">${mark(team.id,"fixture-logo")}<b>${teamCity(team.id)}${team.name}</b></span><span class="schedule-score">${score}</span><span class="schedule-act">${action}</span></div>`;
 }
 function seasonPage(state,{button,progress}){
  const [wins,losses]=ops.ownRecord(state);
  const total=wins+losses;
  const games=ops.schedule(state);
- const complete=games.every(game=>game.result);
- return `<section class="season-summary" aria-label="球队战绩"><div><small>胜场</small><b>${wins}</b></div><div><small>负场</small><b>${losses}</b></div><div><small>胜率</small><b>${total?Math.round(wins/total*100)+"%":"—"}</b></div></section>
- <section class="panel season-calendar"><div class="panel-head"><h2>赛季日程</h2><span class="muted">${total} / ${games.length} 场</span></div>
- <div class="fixture-list">${games.map(game=>fixtureLine(game,button)).join("")}</div>
- <div class="actions">${state.result?button(complete?"赛季已结束":"推进一天","advance-day",{primary:true,disabled:complete}):button(progress()===3?"进入揭幕战":"继续赛季准备","open-flow",{value:String(progress()),primary:true})}</div>
- <p class="muted">${state.result?"推进日期时自动模拟当天的常规赛。":"揭幕战结算后会锁定常规赛日期。"}</p></section>`;
+ let month="";
+ const rows=games.map(game=>{
+  const when=fixtureWhen(state,game);
+  const head=when.month===month?"":`<div class="schedule-month">${when.month}</div>`;
+  month=when.month;
+  return head+scheduleRow(state,game,button,progress);
+ }).join("");
+ return `<section class="schedule-page"><section class="season-summary" aria-label="球队战绩"><div><small>胜</small><b>${wins}</b></div><div><small>负</small><b>${losses}</b></div><div><small>胜率</small><b>${total?Math.round(wins/total*100)+"%":"—"}</b></div></section>
+ <div class="schedule-table"><div class="schedule-head"><span>日期</span><span>轮次</span><span>主/客</span><span>对手</span><span>结果</span><span></span></div><div class="schedule-body">${rows}</div></div></section>`;
 }
 function trainingPage(state,{button,roster,players,photo,rating,practicePlayer,tactics}){
  const id=practicePlayer();

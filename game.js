@@ -536,6 +536,15 @@ function showDialog(title, content) {
 
 const actions = {
   "advance-day"() { advanceDay(); },
+  "play-next"() {
+    const opening=ops.schedule(state).find(game=>!game.result);
+    if (!opening || opening.index===0) return;
+    let guard=0;
+    while (!ops.schedule(state).find(game=>game.index===opening.index)?.result && guard<14) {
+      advanceDay();
+      guard++;
+    }
+  },
   "training-drill"(id) { if (Object.hasOwn(ops.drills,id)) state.drill=id; },
   "training-tactic"(id) { if (Object.hasOwn(tactics,id)) state.tactic=id; },
   train() {
